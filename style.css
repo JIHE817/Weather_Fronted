@@ -1,0 +1,28 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f5f5f5;
+}
+#search-area {
+    margin: 20px 0;
+}
+#search-area input {
+    padding: 6px;
+    width: 200px;
+}
+#search-area button {
+    padding: 6px 12px;
+}
+#map-container {
+    margin: 20px 0;
+    border: 1px solid #ccc;
+    text-align: center;
+    line-height: 400px;
+    color: #999;
+}
+#data-display p {
+    font-size: 16px;
+    margin: 5px 0;
+}
