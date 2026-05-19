@@ -5,19 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>区域气象监测可视化系统</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 高德地图 JS API -->
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=0a6f6321ba8df4839aec4c8277f2f556"></script>
-<!-- 高德地图 UI 组件库（可选，用于工具条、缩放控件等） -->
-<script type="text/javascript" src="https://webapi.amap.com/ui/1.1/main.js"></script>
+    <!-- 高德地图 JS API v1.4.15（稳定版，无需安全密钥） -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=8a6f6321ba8df4839aec4c8277f2f556"></script>
     <style>
         body.modal-open { overflow: hidden; }
         .transition-smooth { transition: all 0.2s ease-in-out; }
         canvas { max-width: 100%; height: auto; }
+        /* 确保地图容器高度有效 */
+        #map-container {
+            width: 100%;
+            height: 256px; /* h-64 = 16rem = 256px */
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <!-- 顶部导航栏 -->
+    <!-- 顶部导航栏（保持不变） -->
     <nav class="bg-white shadow-md sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -118,62 +123,62 @@
                 </div>
             </div>
 
-            <!-- 地图占位 -->
-          <div class="bg-white rounded-xl shadow-md p-4">
-    <h2 class="text-lg font-semibold mb-2">监测区域地图</h2>
-    <!-- 位置坐标显示 -->
-    <div id="position-info" class="mb-2 text-sm text-gray-600 hidden">
-        <span>当前位置：</span>
-        <span id="current-lng">116.397428</span>°E, 
-        <span id="current-lat">39.90923</span>°N
-        <button id="locate-me" class="ml-2 text-blue-600 hover:text-blue-800 underline text-xs">📍 定位我</button>
-    </div>
-    <div id="map-container" class="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
-        🗺️ 地图加载区域（可接入 Leaflet / 高德）
-    </div>
-    <!-- 搜索框 -->
-    <div class="mt-2 flex gap-2">
-        <input type="text" id="search-position" placeholder="搜索地点（如：北京）" class="flex-1 border rounded-lg px-3 py-1 text-sm">
-        <button id="search-position-btn" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">搜索</button>
-    </div>
-    <p class="text-xs text-gray-400 mt-1">* 点击地图查看坐标，支持地理编码搜索</p>
-</div>
+            <!-- 地图区域（改造后） -->
+            <div class="bg-white rounded-xl shadow-md p-4">
+                <h2 class="text-lg font-semibold mb-2">监测区域地图</h2>
+                <!-- 位置坐标显示 -->
+                <div id="position-info" class="mb-2 text-sm text-gray-600 hidden">
+                    <span>当前位置：</span>
+                    <span id="current-lng">116.397428</span>°E, 
+                    <span id="current-lat">39.90923</span>°N
+                    <button id="locate-me" class="ml-2 text-blue-600 hover:text-blue-800 underline text-xs">📍 定位我</button>
+                </div>
+                <!-- 地图容器 -->
+                <div id="map-container"></div>
+                <!-- 搜索框 -->
+                <div class="mt-2 flex gap-2">
+                    <input type="text" id="search-position" placeholder="搜索地点（如：北京）" class="flex-1 border rounded-lg px-3 py-1 text-sm">
+                    <button id="search-position-btn" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">搜索</button>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">* 点击地图查看坐标，支持地理编码搜索</p>
+            </div>
 
-        <!-- 管理员面板 -->
-        <div id="admin-panel" class="hidden mt-8 space-y-8">
-            <div class="border-t-2 border-blue-200 pt-6">
-                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                    管理员控制台
-                </h2>
-            </div>
-            <!-- 用户管理 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h3 class="text-lg font-semibold mb-3">用户管理</h3>
-                <div id="users-list-container">
-                    <button id="refresh-users-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新用户列表</button>
-                    <div id="users-list" class="overflow-x-auto">加载中...</div>
+            <!-- 管理员面板 -->
+            <div id="admin-panel" class="hidden mt-8 space-y-8">
+                <div class="border-t-2 border-blue-200 pt-6">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        管理员控制台
+                    </h2>
                 </div>
-            </div>
-            <!-- 区域管理 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h3 class="text-lg font-semibold mb-3">区域列表</h3>
-                <div id="regions-list-container">
-                    <button id="refresh-regions-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新区域</button>
-                    <div id="regions-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">加载中...</div>
+                <!-- 用户管理 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-3">用户管理</h3>
+                    <div id="users-list-container">
+                        <button id="refresh-users-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新用户列表</button>
+                        <div id="users-list" class="overflow-x-auto">加载中...</div>
+                    </div>
                 </div>
-                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <h4 class="font-medium text-gray-700">新建区域（管理员）</h4>
-                    <div class="flex gap-2 mt-2">
-                        <input type="text" id="new-region-name" placeholder="区域名称（如 上海）" class="border rounded px-3 py-2 flex-1">
-                        <button id="create-region-btn" class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">创建</button>
+                <!-- 区域管理 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-3">区域列表</h3>
+                    <div id="regions-list-container">
+                        <button id="refresh-regions-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新区域</button>
+                        <div id="regions-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">加载中...</div>
+                    </div>
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 class="font-medium text-gray-700">新建区域（管理员）</h4>
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="new-region-name" placeholder="区域名称（如 上海）" class="border rounded px-3 py-2 flex-1">
+                            <button id="create-region-btn" class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">创建</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- 登录模态框 -->
+    <!-- 登录模态框（保持不变） -->
     <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button class="close-modal absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl" data-modal="login-modal">&times;</button>
@@ -193,7 +198,7 @@
         </div>
     </div>
 
-    <!-- 注册模态框 -->
+    <!-- 注册模态框（保持不变） -->
     <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button class="close-modal absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl" data-modal="register-modal">&times;</button>

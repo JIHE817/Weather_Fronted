@@ -201,7 +201,7 @@ const uiService = {
         let html = `<table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">ID</th><th class="px-4 py-2 border">用户名</th><th class="px-4 py-2 border">邮箱</th>
             <th class="px-4 py-2 border">角色</th><th class="px-4 py-2 border">操作</th>
-          </tr></thead><tbody>`;
+           </tr></thead><tbody>`;
         users.forEach(user => {
             const isSelf = currentUser && currentUser.username === user.username;
             html += `<tr>
@@ -278,59 +278,20 @@ const uiService = {
         if (modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); }
     },
 
-    // ==================== 高德地图相关方法 ====================
+    // ==================== 高德地图（v1.4.15）相关方法 ====================
     mapInstance: null,
-    geocoder: null,       // 地理编码实例
+    geocoder: null,
+    currentMarker: null,   // 当前地图上的标记
 
-    // 确保地理编码服务就绪（若无地图实例，则创建默认地图）
-    ensureGeocoder() {
+    // 初始化地图（默认中心：成都）
+    initMap(lng = 103.988471, lat = 30.581856, name = '默认位置') {
         if (typeof AMap === 'undefined') {
             console.warn('高德地图 API 未加载');
-            uiService.showError('高德地图 API 未加载，请检查网络或 Key');
+            uiService.showError('高德地图 API 未加载');
             return false;
         }
-        if (!this.geocoder) {
-            const container = document.getElementById('map-container');
-            if (!container) return false;
-            // 如果地图实例不存在，则创建一个默认地图（坐标：成都）
-            if (!this.mapInstance) {
-                try {
-                    this.mapInstance = new AMap.Map('map-container', {
-                        zoom: 10,
-                        center: [103.988471, 30.581856],  // 你截图中的坐标
-                        viewMode: '3D'
-                    });
-                    // 可选：添加一个默认标记
-                    new AMap.Marker({
-                        position: [103.988471, 30.581856],
-                        title: '默认位置',
-                        map: this.mapInstance
-                    });
-                    // 更新坐标显示
-                    this.updatePositionDisplay(103.988471, 30.581856);
-                } catch (err) {
-                    console.error('创建默认地图失败', err);
-                    uiService.showError('地图初始化失败');
-                    return false;
-                }
-            }
-            // 创建地理编码服务实例
-            this.geocoder = new AMap.Geocoder({
-                city: '全国',
-                radius: 1000
-            });
-        }
-        return true;
-    },
-
-    // 初始化或更新地图（用于区域联动）
-    initMap(lng, lat, name) {
-        if (typeof AMap === 'undefined') {
-            console.warn('高德地图 API 未加载，请检查 script 标签');
-            return;
-        }
         const container = document.getElementById('map-container');
-        if (!container) return;
+        if (!container) return false;
 
         if (!this.mapInstance) {
             // 首次创建地图
@@ -339,26 +300,51 @@ const uiService = {
                 center: [lng, lat],
                 viewMode: '3D'
             });
-            // 创建地理编码服务实例（如果还没有）
-            if (!this.geocoder) {
-                this.geocoder = new AMap.Geocoder({
-                    city: '全国',
-                    radius: 1000
-                });
-            }
+            // 创建地理编码服务
+            this.geocoder = new AMap.Geocoder({
+                city: '全国',
+                radius: 1000
+            });
+            // 可选：添加点击事件获取坐标
+            this.mapInstance.on('click', (e) => {
+                const lng = e.lnglat.getLng();
+                const lat = e.lnglat.getLat();
+                this.updatePositionDisplay(lng, lat);
+                uiService.showSuccess(`点击坐标：${lng.toFixed(6)}, ${lat.toFixed(6)}`);
+            });
         } else {
-            // 已有地图，更新中心点
+            // 已有地图，移动中心并清除旧标记
             this.mapInstance.setCenter([lng, lat]);
-            this.mapInstance.clearMap();
+            if (this.currentMarker) {
+                this.mapInstance.remove(this.currentMarker);
+            }
         }
-        // 添加标记
-        new AMap.Marker({
+        // 添加新标记
+        this.currentMarker = new AMap.Marker({
             position: [lng, lat],
             title: name,
             map: this.mapInstance
         });
-        // 更新坐标显示
         this.updatePositionDisplay(lng, lat);
+        return true;
+    },
+
+    // 根据区域ID更新地图（区域联动）
+    async updateMapByRegionId(regionId) {
+        if (!regionId) return;
+        try {
+            const data = await apiService.getRegions();
+            const region = data.data?.find(r => r.id == regionId);
+            if (region && region.longitude && region.latitude) {
+                this.initMap(region.longitude, region.latitude, region.name);
+            } else {
+                console.warn('区域无经纬度信息，使用默认地图');
+                this.initMap();
+            }
+        } catch (err) {
+            console.error('更新地图失败', err);
+            this.initMap(); // 失败时显示默认地图
+        }
     },
 
     // 更新页面上的经纬度显示
@@ -373,25 +359,8 @@ const uiService = {
         }
     },
 
-    // 根据区域ID更新地图（区域联动）
-    async updateMapByRegionId(regionId) {
-        if (!regionId) return;
-        try {
-            const data = await apiService.getRegions();
-            const region = data.data?.find(r => r.id == regionId);
-            if (region && region.longitude && region.latitude) {
-                this.initMap(region.longitude, region.latitude, region.name);
-            } else {
-                console.warn('区域无经纬度信息，无法显示地图');
-            }
-        } catch (err) {
-            console.error('更新地图失败', err);
-        }
-    },
-
-    // 获取用户当前位置并移动地图
+    // 定位当前用户位置
     locateUser() {
-        if (!this.ensureGeocoder()) return;   // 确保服务就绪
         if (!this.mapInstance) {
             uiService.showError('地图尚未初始化');
             return;
@@ -405,8 +374,8 @@ const uiService = {
                 const lng = position.coords.longitude;
                 const lat = position.coords.latitude;
                 this.mapInstance.setCenter([lng, lat]);
-                this.mapInstance.clearMap();
-                new AMap.Marker({
+                if (this.currentMarker) this.mapInstance.remove(this.currentMarker);
+                this.currentMarker = new AMap.Marker({
                     position: [lng, lat],
                     title: '我的位置',
                     map: this.mapInstance
@@ -428,7 +397,10 @@ const uiService = {
 
     // 搜索地点并移动地图
     searchPlace(keyword) {
-        if (!this.ensureGeocoder()) return;   // 确保服务就绪
+        if (!this.geocoder) {
+            uiService.showError('地理编码服务未就绪');
+            return;
+        }
         if (!keyword.trim()) {
             uiService.showError('请输入搜索关键词');
             return;
@@ -440,8 +412,8 @@ const uiService = {
                 const lat = location.lat;
                 const formattedAddress = result.geocodes[0].formattedAddress;
                 this.mapInstance.setCenter([lng, lat]);
-                this.mapInstance.clearMap();
-                new AMap.Marker({
+                if (this.currentMarker) this.mapInstance.remove(this.currentMarker);
+                this.currentMarker = new AMap.Marker({
                     position: [lng, lat],
                     title: formattedAddress || keyword,
                     map: this.mapInstance
@@ -459,7 +431,8 @@ const appController = {
     async init() {
         this.bindEvents();
         uiService.updateUserInfo();
-        uiService.ensureGeocoder();   // 预初始化地图和地理编码服务
+        // 初始化地图（默认成都坐标）
+        uiService.initMap(103.988471, 30.581856, '成都');
         if (apiService.getToken()) {
             await this.loadInitialData();
         }
@@ -482,7 +455,7 @@ const appController = {
         document.getElementById('search-region-by-name')?.addEventListener('click', () => this.searchRegionByName());
         document.getElementById('add-weather-btn')?.addEventListener('click', () => this.addWeatherData());
 
-        // ========== 地图交互事件 ==========
+        // 地图交互事件
         document.getElementById('locate-me')?.addEventListener('click', () => uiService.locateUser());
         document.getElementById('search-position-btn')?.addEventListener('click', () => {
             const keyword = document.getElementById('search-position')?.value;
