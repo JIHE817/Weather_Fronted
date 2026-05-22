@@ -150,7 +150,7 @@ const uiService = {
         let html = `<div class="overflow-x-auto"><table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">时间</th><th class="px-4 py-2 border">温度(°C)</th><th class="px-4 py-2 border">湿度(%)</th>
             <th class="px-4 py-2 border">风速(m/s)</th><th class="px-4 py-2 border">风向</th><th class="px-4 py-2 border">降水(mm)</th>
-           </td></thead><tbody>`;
+            </tr></thead><tbody>`;
         data.forEach(item => {
             html += `<tr class="hover:bg-gray-50">
                 <td class="px-4 py-2 border">${new Date(item.timestamp).toLocaleString()}</td>
@@ -159,7 +159,7 @@ const uiService = {
                 <td class="px-4 py-2 border">${item.wind_speed ?? '-'}</td>
                 <td class="px-4 py-2 border">${item.wind_direction ?? '-'}</td>
                 <td class="px-4 py-2 border">${item.precipitation ?? '-'}</td>
-              </tr>`;
+               </tr>`;
         });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
@@ -201,7 +201,7 @@ const uiService = {
         let html = `<table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">ID</th><th class="px-4 py-2 border">用户名</th><th class="px-4 py-2 border">邮箱</th>
             <th class="px-4 py-2 border">角色</th><th class="px-4 py-2 border">操作</th>
-           </tr></thead><tbody>`;
+            </tr></thead><tbody>`;
         users.forEach(user => {
             const isSelf = currentUser && currentUser.username === user.username;
             html += `<tr>
@@ -217,7 +217,7 @@ const uiService = {
                 <td class="px-4 py-2 border">
                     ${!isSelf ? `<button class="delete-user bg-red-500 text-white px-2 py-1 rounded text-sm" data-username="${user.username}">删除</button>` : '不可操作自己'}
                 </td>
-              </tr>`;
+               </tr>`;
         });
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -278,12 +278,24 @@ const uiService = {
         if (modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); }
     },
 
-    // ==================== 高德地图（v1.4.15）相关方法 ====================
+    // ==================== 高德地图相关方法 ====================
     mapInstance: null,
     geocoder: null,
-    currentMarker: null,   // 当前地图上的标记
+    currentMarker: null,
 
-    // 初始化地图（默认中心：成都）
+    // 销毁地图实例
+    destroyMap() {
+        if (this.mapInstance) {
+            try {
+                this.mapInstance.destroy();
+            } catch(e) {}
+            this.mapInstance = null;
+        }
+        this.geocoder = null;
+        this.currentMarker = null;
+    },
+
+    // 初始化地图
     initMap(lng = 103.988471, lat = 30.581856, name = '默认位置') {
         if (typeof AMap === 'undefined') {
             console.warn('高德地图 API 未加载');
@@ -293,33 +305,27 @@ const uiService = {
         const container = document.getElementById('map-container');
         if (!container) return false;
 
-        if (!this.mapInstance) {
-            // 首次创建地图
-            this.mapInstance = new AMap.Map('map-container', {
-                zoom: 10,
-                center: [lng, lat],
-                viewMode: '3D'
-            });
-            // 创建地理编码服务
-            this.geocoder = new AMap.Geocoder({
-                city: '全国',
-                radius: 1000
-            });
-            // 可选：添加点击事件获取坐标
-            this.mapInstance.on('click', (e) => {
-                const lng = e.lnglat.getLng();
-                const lat = e.lnglat.getLat();
-                this.updatePositionDisplay(lng, lat);
-                uiService.showSuccess(`点击坐标：${lng.toFixed(6)}, ${lat.toFixed(6)}`);
-            });
-        } else {
-            // 已有地图，移动中心并清除旧标记
-            this.mapInstance.setCenter([lng, lat]);
-            if (this.currentMarker) {
-                this.mapInstance.remove(this.currentMarker);
-            }
+        // 如果已有地图实例，先销毁再重建
+        if (this.mapInstance) {
+            this.destroyMap();
         }
-        // 添加新标记
+
+        this.mapInstance = new AMap.Map('map-container', {
+            zoom: 10,
+            center: [lng, lat],
+            viewMode: '3D'
+        });
+        this.geocoder = new AMap.Geocoder({
+            city: '全国',
+            radius: 1000
+        });
+        this.mapInstance.on('click', (e) => {
+            const lng = e.lnglat.getLng();
+            const lat = e.lnglat.getLat();
+            this.updatePositionDisplay(lng, lat);
+            uiService.showSuccess(`点击坐标：${lng.toFixed(6)}, ${lat.toFixed(6)}`);
+        });
+
         this.currentMarker = new AMap.Marker({
             position: [lng, lat],
             title: name,
@@ -329,7 +335,6 @@ const uiService = {
         return true;
     },
 
-    // 根据区域ID更新地图（区域联动）
     async updateMapByRegionId(regionId) {
         if (!regionId) return;
         try {
@@ -338,16 +343,14 @@ const uiService = {
             if (region && region.longitude && region.latitude) {
                 this.initMap(region.longitude, region.latitude, region.name);
             } else {
-                console.warn('区域无经纬度信息，使用默认地图');
                 this.initMap();
             }
         } catch (err) {
             console.error('更新地图失败', err);
-            this.initMap(); // 失败时显示默认地图
+            this.initMap();
         }
     },
 
-    // 更新页面上的经纬度显示
     updatePositionDisplay(lng, lat) {
         const posInfo = document.getElementById('position-info');
         const lngSpan = document.getElementById('current-lng');
@@ -359,7 +362,6 @@ const uiService = {
         }
     },
 
-    // 定位当前用户位置
     locateUser() {
         if (!this.mapInstance) {
             uiService.showError('地图尚未初始化');
@@ -395,7 +397,6 @@ const uiService = {
         );
     },
 
-    // 搜索地点并移动地图
     searchPlace(keyword) {
         if (!this.geocoder) {
             uiService.showError('地理编码服务未就绪');
@@ -424,19 +425,84 @@ const uiService = {
                 uiService.showError(`未找到地点“${keyword}”`);
             }
         });
+    },
+
+    // ==================== 视图切换方法 ====================
+    showWelcome() {
+        const welcomeContainer = document.getElementById('welcome-container');
+        const mainContainer = document.getElementById('main-app-container');
+        if (welcomeContainer) welcomeContainer.classList.remove('hidden');
+        if (mainContainer) mainContainer.classList.add('hidden');
+        // 销毁地图实例，避免后台运行
+        this.destroyMap();
+    },
+
+    showMainApp() {
+        const welcomeContainer = document.getElementById('welcome-container');
+        const mainContainer = document.getElementById('main-app-container');
+        if (welcomeContainer) welcomeContainer.classList.add('hidden');
+        if (mainContainer) mainContainer.classList.remove('hidden');
+    },
+
+    // 清除主应用数据（登出时调用）
+    clearAppData() {
+        // 清空表格内容
+        const weatherContainer = document.getElementById('weather-table-container');
+        if (weatherContainer) weatherContainer.innerHTML = '<div class="text-center text-gray-400 py-8">请选择区域并点击查询</div>';
+        // 清空图表
+        const canvas = document.getElementById('temperature-chart');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        // 清空区域选择器
+        const regionSelect = document.getElementById('region-select');
+        if (regionSelect) regionSelect.innerHTML = '<option value="">请先登录</option>';
+        const addRegionSelect = document.getElementById('add-region-id');
+        if (addRegionSelect) addRegionSelect.innerHTML = '<option value="">选择区域</option>';
+        // 销毁地图
+        this.destroyMap();
     }
 };
 
 const appController = {
     async init() {
         this.bindEvents();
-        uiService.updateUserInfo();
-        // 初始化地图（默认成都坐标）
-        uiService.initMap(103.988471, 30.581856, '成都');
-        if (apiService.getToken()) {
+        
+        // 检查登录状态
+        const token = apiService.getToken();
+        const user = apiService.getUser();
+        
+        if (token && user) {
+            // 已登录，直接显示主应用
+            uiService.showMainApp();
+            uiService.updateUserInfo();
             await this.loadInitialData();
+            await this.initMainApp();
+        } else {
+            // 未登录，显示欢迎界面
+            uiService.showWelcome();
+            uiService.updateUserInfo();
+            // 确保主应用内容清空
+            uiService.clearAppData();
         }
     },
+    
+    // 主应用初始化（登录后调用）
+    async initMainApp() {
+        // 初始化地图（默认成都）
+        uiService.initMap(103.988471, 30.581856, '成都');
+        // 加载区域数据
+        await uiService.renderRegionSelector('region-select');
+        await uiService.renderRegionSelector('add-region-id');
+        // 如果有默认区域，查询天气并更新地图
+        const select = document.getElementById('region-select');
+        if (select && select.value) {
+            await this.searchWeather();
+            await uiService.updateMapByRegionId(select.value);
+        }
+    },
+    
     bindEvents() {
         document.getElementById('login-form')?.addEventListener('submit', e => { e.preventDefault(); this.handleLogin(); });
         document.getElementById('register-form')?.addEventListener('submit', e => { e.preventDefault(); this.handleRegister(); });
@@ -467,7 +533,12 @@ const appController = {
                 if (keyword) uiService.searchPlace(keyword);
             }
         });
+        
+        // 欢迎界面按钮事件
+        document.getElementById('welcome-login-btn')?.addEventListener('click', () => uiService.showModal('login-modal'));
+        document.getElementById('welcome-register-btn')?.addEventListener('click', () => uiService.showModal('register-modal'));
     },
+    
     async handleLogin() {
         const username = document.getElementById('login-username')?.value;
         const password = document.getElementById('login-password')?.value;
@@ -477,11 +548,16 @@ const appController = {
             uiService.showSuccess('登录成功');
             uiService.hideModal('login-modal');
             uiService.updateUserInfo();
-            await this.loadInitialData();
+            // 切换视图
+            uiService.showMainApp();
+            // 初始化主应用数据
+            await this.initMainApp();
+            // 清空登录表单
             document.getElementById('login-username').value = '';
             document.getElementById('login-password').value = '';
         } catch (err) { uiService.showError(err.message); }
     },
+    
     async handleRegister() {
         const username = document.getElementById('reg-username')?.value;
         const email = document.getElementById('reg-email')?.value;
@@ -497,14 +573,18 @@ const appController = {
             uiService.showModal('login-modal');
         } catch (err) { uiService.showError(err.message); }
     },
+    
     handleLogout() {
         if (confirm('确定退出？')) {
             apiService.clearAuth();
             uiService.updateUserInfo();
-            document.getElementById('weather-table-container').innerHTML = '';
-            document.getElementById('region-select').innerHTML = '<option value="">请先登录</option>';
+            // 清空主应用数据
+            uiService.clearAppData();
+            // 切换回欢迎界面
+            uiService.showWelcome();
         }
     },
+    
     async loadInitialData() {
         try {
             await uiService.renderRegionSelector('region-select');
@@ -512,10 +592,10 @@ const appController = {
             const select = document.getElementById('region-select');
             if (select && select.value) {
                 await this.searchWeather();
-                await uiService.updateMapByRegionId(select.value);
             }
         } catch (err) { console.error(err); }
     },
+    
     async searchWeather() {
         const regionId = document.getElementById('region-select')?.value;
         if (!regionId) return uiService.showError('请选择区域');
@@ -532,6 +612,7 @@ const appController = {
             } else uiService.renderWeatherTable([]);
         } catch (err) { uiService.showError(err.message); uiService.renderWeatherTable([]); }
     },
+    
     async searchRegionByName() {
         const name = document.getElementById('search-region-name')?.value.trim();
         if (!name) return uiService.showError('请输入区域名称');
@@ -547,6 +628,7 @@ const appController = {
             }
         } catch (err) { uiService.showError(err.message); }
     },
+    
     async addWeatherData() {
         const region_id = document.getElementById('add-region-id')?.value;
         const timestamp = document.getElementById('add-timestamp')?.value;
@@ -579,12 +661,14 @@ const appController = {
             if (currentRegion == region_id) await this.searchWeather();
         } catch (err) { uiService.showError(err.message); }
     },
+    
     async loadUsers() {
         try {
             const data = await apiService.getUsers();
             if (data.data) uiService.renderUsersList(data.data);
         } catch (err) { uiService.showError(err.message); }
     },
+    
     async loadRegions() {
         try {
             const data = await apiService.getRegions();
@@ -595,6 +679,7 @@ const appController = {
             }
         } catch (err) { uiService.showError(err.message); }
     },
+    
     async createRegion() {
         const name = document.getElementById('new-region-name')?.value.trim();
         if (!name) return uiService.showError('请输入区域名称');

@@ -14,15 +14,29 @@
         /* 确保地图容器高度有效 */
         #map-container {
             width: 100%;
-            height: 256px; /* h-64 = 16rem = 256px */
+            height: 256px;
             background-color: #e5e7eb;
             border-radius: 0.5rem;
+        }
+        /* 欢迎界面动画 */
+        .welcome-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <!-- 顶部导航栏（保持不变） -->
+    <!-- 顶部导航栏 -->
     <nav class="bg-white shadow-md sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -50,8 +64,46 @@
         <div id="error-message" class="mb-4"></div>
         <div id="success-message" class="mb-4"></div>
 
-        <!-- 普通用户视图 -->
-        <div id="user-views" class="space-y-8">
+        <!-- ==================== 欢迎界面（未登录时显示） ==================== -->
+        <div id="welcome-container" class="min-h-[70vh] flex items-center justify-center">
+            <div class="welcome-card bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-2xl text-center">
+                <div class="flex justify-center mb-6">
+                    <svg class="h-20 w-20 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">欢迎使用区域气象监测系统</h2>
+                <p class="text-gray-600 text-lg mb-6">实时监测区域气象数据，可视化展示温度趋势，支持多区域管理</p>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button id="welcome-login-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition duration-200 shadow-md">
+                        登录账户
+                    </button>
+                    <button id="welcome-register-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg text-lg font-medium transition duration-200">
+                        注册新账号
+                    </button>
+                </div>
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left text-sm text-gray-500">
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>实时气象监测</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>可视化数据图表</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>地图联动展示</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 主应用界面（登录后显示） ==================== -->
+        <div id="main-app-container" class="hidden space-y-8">
             <!-- 气象数据检索 -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -123,19 +175,16 @@
                 </div>
             </div>
 
-            <!-- 地图区域（改造后） -->
+            <!-- 地图区域 -->
             <div class="bg-white rounded-xl shadow-md p-4">
                 <h2 class="text-lg font-semibold mb-2">监测区域地图</h2>
-                <!-- 位置坐标显示 -->
                 <div id="position-info" class="mb-2 text-sm text-gray-600 hidden">
                     <span>当前位置：</span>
                     <span id="current-lng">116.397428</span>°E, 
                     <span id="current-lat">39.90923</span>°N
                     <button id="locate-me" class="ml-2 text-blue-600 hover:text-blue-800 underline text-xs">📍 定位我</button>
                 </div>
-                <!-- 地图容器 -->
                 <div id="map-container"></div>
-                <!-- 搜索框 -->
                 <div class="mt-2 flex gap-2">
                     <input type="text" id="search-position" placeholder="搜索地点（如：北京）" class="flex-1 border rounded-lg px-3 py-1 text-sm">
                     <button id="search-position-btn" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">搜索</button>
@@ -178,7 +227,7 @@
         </div>
     </main>
 
-    <!-- 登录模态框（保持不变） -->
+    <!-- 登录模态框 -->
     <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button class="close-modal absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl" data-modal="login-modal">&times;</button>
@@ -198,7 +247,7 @@
         </div>
     </div>
 
-    <!-- 注册模态框（保持不变） -->
+    <!-- 注册模态框 -->
     <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button class="close-modal absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl" data-modal="register-modal">&times;</button>
