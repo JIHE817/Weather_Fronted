@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.19.240.108:5000/api/v1',
+    API_BASE_URL: 'http://10.27.21.241:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
@@ -62,13 +62,13 @@ const apiService = {
         return this.request('/regions/create', { method: 'POST', body: { name } });
     },
     getWeatherData(params) {
-        const query = new URLSearchParams();
-        if (params.region_id) query.append('region_id', params.region_id);
-        if (params.start_time) query.append('start_time', params.start_time);
-        if (params.end_time) query.append('end_time', params.end_time);
-        if (params.limit) query.append('limit', params.limit);
-        const endpoint = query.toString() ? `/weather?${query}` : '/weather';
-        return this.request(endpoint);
+        const body = {};
+        if (params.region_id) body.region_id = params.region_id;
+        if (params.start_time) body.start_time = params.start_time;
+        if (params.end_time) body.end_time = params.end_time;
+        if (params.limit) body.limit = params.limit;
+        if (params.data_type) body.data_type = params.data_type;
+        return this.request('/weather', { method: 'POST', body });
     },
     addWeatherData(data) {
         return this.request('/weather', { method: 'POST', body: data });
@@ -128,6 +128,8 @@ const uiService = {
             const data = await apiService.getRegions();
             const select = document.getElementById(selectId);
             if (!select) return;
+            // 保存当前选中的值
+            const currentValue = select.value;
             select.innerHTML = '<option value="">请选择区域</option>';
             if (data.data?.length) {
                 data.data.forEach(region => {
@@ -137,6 +139,10 @@ const uiService = {
                     if (selectedId && region.id == selectedId) opt.selected = true;
                     select.appendChild(opt);
                 });
+            }
+            // 恢复之前选中的值
+            if (currentValue && !selectedId) {
+                select.value = currentValue;
             }
         } catch (err) { console.error(err); }
     },
@@ -150,7 +156,7 @@ const uiService = {
         let html = `<div class="overflow-x-auto"><table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">时间</th><th class="px-4 py-2 border">温度(°C)</th><th class="px-4 py-2 border">湿度(%)</th>
             <th class="px-4 py-2 border">风速(m/s)</th><th class="px-4 py-2 border">风向</th><th class="px-4 py-2 border">降水(mm)</th>
-            </tr></thead><tbody>`;
+            </table></thead><tbody>`;
         data.forEach(item => {
             html += `<tr class="hover:bg-gray-50">
                 <td class="px-4 py-2 border">${new Date(item.timestamp).toLocaleString()}</td>
@@ -166,33 +172,318 @@ const uiService = {
     },
     drawTemperatureChart(canvasId, data) {
         const canvas = document.getElementById(canvasId);
-        if (!canvas || !data.length) return;
+        if (!canvas || !data || data.length === 0) {
+            console.warn('无温度数据或画布不存在');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const width = canvas.clientWidth, height = canvas.clientHeight;
+                canvas.width = width; canvas.height = height;
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#999';
+                ctx.font = '14px Arial';
+                ctx.fillText('暂无温度数据', width/2 - 50, height/2);
+            }
+            return;
+        }
+
         const ctx = canvas.getContext('2d');
-        const width = canvas.clientWidth, height = canvas.clientHeight;
-        canvas.width = width; canvas.height = height;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        
+        canvas.width = width;
+        canvas.height = height;
         ctx.clearRect(0, 0, width, height);
-        const maxTemp = Math.max(...data, 0);
-        const minTemp = Math.min(...data, 0);
-        const range = maxTemp - minTemp || 1;
-        const stepX = (width - 80) / (data.length - 1);
+        
+        const validData = data.filter(t => t !== null && t !== undefined);
+        if (validData.length === 0) {
+            ctx.fillStyle = '#999';
+            ctx.font = '14px Arial';
+            ctx.fillText('无有效温度数据', width/2 - 50, height/2);
+            return;
+        }
+        
+        const maxTemp = Math.max(...validData);
+        const minTemp = Math.min(...validData);
+        const range = maxTemp - minTemp;
+        const actualRange = range === 0 ? 10 : range;
+        const padding = actualRange * 0.1;
+        
+        const yMin = minTemp - padding;
+        const yMax = maxTemp + padding;
+        const yRange = yMax - yMin;
+        
+        const margin = { top: 40, right: 30, bottom: 40, left: 50 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+        const stepX = chartWidth / (validData.length - 1);
+        
+        ctx.save();
+        
+        // 绘制坐标轴
+        ctx.beginPath();
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.moveTo(margin.left, height - margin.bottom);
+        ctx.lineTo(width - margin.right, height - margin.bottom);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, height - margin.bottom);
+        ctx.stroke();
+        
+        // Y轴刻度
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        
+        const yTickCount = 5;
+        for (let i = 0; i <= yTickCount; i++) {
+            const yValue = yMin + (i / yTickCount) * yRange;
+            const y = height - margin.bottom - (i / yTickCount) * chartHeight;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.moveTo(margin.left - 5, y);
+            ctx.lineTo(margin.left, y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(width - margin.right, y);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#666';
+            ctx.fillText(yValue.toFixed(1) + '°C', margin.left - 8, y);
+        }
+        
+        // X轴标签
+        ctx.fillStyle = '#666';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        const xLabelCount = Math.min(5, validData.length);
+        for (let i = 0; i < xLabelCount; i++) {
+            const dataIndex = Math.floor((i / (xLabelCount - 1)) * (validData.length - 1));
+            const x = margin.left + dataIndex * stepX;
+            ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
+        }
+        
+        // 绘制折线
         ctx.beginPath();
         ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < data.length; i++) {
-            const x = 40 + i * stepX;
-            const y = height - 30 - ((data[i] - minTemp) / range) * (height - 60);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-            ctx.fillStyle = '#3b82f6';
-            ctx.beginPath();
-            ctx.arc(x, y, 3, 0, 2 * Math.PI);
-            ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        let firstPoint = true;
+        const points = [];
+        
+        for (let i = 0; i < validData.length; i++) {
+            const x = margin.left + i * stepX;
+            const y = height - margin.bottom - ((validData[i] - yMin) / yRange) * chartHeight;
+            points.push({ x, y, temp: validData[i] });
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
         }
         ctx.stroke();
-        ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
-        ctx.fillText('温度变化趋势', width/2 - 60, 20);
+        
+        // 绘制数据点
+        for (let i = 0; i < points.length; i++) {
+            ctx.beginPath();
+            ctx.fillStyle = '#3b82f6';
+            ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.fillStyle = '#fff';
+            ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#1f2937';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(points[i].temp.toFixed(1) + '°C', points[i].x, points[i].y - 6);
+        }
+        
+        ctx.fillStyle = '#374151';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('温度变化趋势图', width / 2, margin.top - 15);
+        
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px Arial';
+        ctx.fillText('时间序列', width / 2, height - 10);
+        
+        ctx.save();
+        ctx.translate(18, height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('温度 (°C)', 0, 0);
+        ctx.restore();
+        
+        ctx.restore();
     },
+    
+    // 新增 drawLineChart 方法（用于数据类型趋势图）
+    drawLineChart(canvasId, data, label, unit) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !data || data.length === 0) {
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const width = canvas.clientWidth, height = canvas.clientHeight;
+                canvas.width = width; canvas.height = height;
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#999';
+                ctx.font = '14px Arial';
+                ctx.fillText('暂无数据', width/2 - 40, height/2);
+            }
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.clearRect(0, 0, width, height);
+        
+        const values = data.map(item => item.value !== undefined ? item.value : item);
+        if (values.length === 0) return;
+        
+        const maxVal = Math.max(...values, 0);
+        const minVal = Math.min(...values, 0);
+        const range = maxVal - minVal;
+        const actualRange = range === 0 ? 10 : range;
+        const padding = actualRange * 0.1;
+        
+        const yMin = minVal - padding;
+        const yMax = maxVal + padding;
+        const yRange = yMax - yMin;
+        
+        const margin = { top: 40, right: 30, bottom: 40, left: 50 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+        const stepX = chartWidth / (values.length - 1);
+        
+        ctx.save();
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.moveTo(margin.left, height - margin.bottom);
+        ctx.lineTo(width - margin.right, height - margin.bottom);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, height - margin.bottom);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        
+        const yTickCount = 5;
+        for (let i = 0; i <= yTickCount; i++) {
+            const yValue = yMin + (i / yTickCount) * yRange;
+            const y = height - margin.bottom - (i / yTickCount) * chartHeight;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.moveTo(margin.left - 5, y);
+            ctx.lineTo(margin.left, y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(width - margin.right, y);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#666';
+            ctx.fillText(yValue.toFixed(1), margin.left - 8, y);
+        }
+        
+        ctx.fillStyle = '#666';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        const xLabelCount = Math.min(5, values.length);
+        for (let i = 0; i < xLabelCount; i++) {
+            const dataIndex = Math.floor((i / (xLabelCount - 1)) * (values.length - 1));
+            const x = margin.left + dataIndex * stepX;
+            ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
+        }
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        let firstPoint = true;
+        const points = [];
+        
+        for (let i = 0; i < values.length; i++) {
+            const x = margin.left + i * stepX;
+            const y = height - margin.bottom - ((values[i] - yMin) / yRange) * chartHeight;
+            points.push({ x, y, val: values[i] });
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+        
+        for (let i = 0; i < points.length; i++) {
+            ctx.beginPath();
+            ctx.fillStyle = '#f97316';
+            ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.fillStyle = '#fff';
+            ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        ctx.fillStyle = '#374151';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${label}趋势图`, width / 2, margin.top - 15);
+        
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px Arial';
+        ctx.fillText('时间序列', width / 2, height - 10);
+        
+        ctx.save();
+        ctx.translate(18, height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${label} (${unit})`, 0, 0);
+        ctx.restore();
+        
+        ctx.restore();
+    },
+    
     renderUsersList(users) {
         const container = document.getElementById('users-list');
         if (!container) return;
@@ -201,7 +492,7 @@ const uiService = {
         let html = `<table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">ID</th><th class="px-4 py-2 border">用户名</th><th class="px-4 py-2 border">邮箱</th>
             <th class="px-4 py-2 border">角色</th><th class="px-4 py-2 border">操作</th>
-            </tr></thead><tbody>`;
+            <tr></thead><tbody>`;
         users.forEach(user => {
             const isSelf = currentUser && currentUser.username === user.username;
             html += `<tr>
@@ -217,7 +508,7 @@ const uiService = {
                 <td class="px-4 py-2 border">
                     ${!isSelf ? `<button class="delete-user bg-red-500 text-white px-2 py-1 rounded text-sm" data-username="${user.username}">删除</button>` : '不可操作自己'}
                 </td>
-               </tr>`;
+             </tr>`;
         });
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -283,7 +574,6 @@ const uiService = {
     geocoder: null,
     currentMarker: null,
 
-    // 销毁地图实例
     destroyMap() {
         if (this.mapInstance) {
             try {
@@ -295,7 +585,6 @@ const uiService = {
         this.currentMarker = null;
     },
 
-    // 初始化地图
     initMap(lng = 103.988471, lat = 30.581856, name = '默认位置') {
         if (typeof AMap === 'undefined') {
             console.warn('高德地图 API 未加载');
@@ -305,7 +594,6 @@ const uiService = {
         const container = document.getElementById('map-container');
         if (!container) return false;
 
-        // 如果已有地图实例，先销毁再重建
         if (this.mapInstance) {
             this.destroyMap();
         }
@@ -315,10 +603,15 @@ const uiService = {
             center: [lng, lat],
             viewMode: '3D'
         });
-        this.geocoder = new AMap.Geocoder({
-            city: '全国',
-            radius: 1000
+        
+        // 异步加载 Geocoder
+        AMap.plugin(['AMap.Geocoder'], () => {
+            this.geocoder = new AMap.Geocoder({
+                city: '全国',
+                radius: 1000
+            });
         });
+        
         this.mapInstance.on('click', (e) => {
             const lng = e.lnglat.getLng();
             const lat = e.lnglat.getLat();
@@ -399,9 +692,20 @@ const uiService = {
 
     searchPlace(keyword) {
         if (!this.geocoder) {
-            uiService.showError('地理编码服务未就绪');
+            // 尝试重新加载
+            AMap.plugin(['AMap.Geocoder'], () => {
+                this.geocoder = new AMap.Geocoder({
+                    city: '全国',
+                    radius: 1000
+                });
+                this.doSearchPlace(keyword);
+            });
             return;
         }
+        this.doSearchPlace(keyword);
+    },
+    
+    doSearchPlace(keyword) {
         if (!keyword.trim()) {
             uiService.showError('请输入搜索关键词');
             return;
@@ -433,7 +737,6 @@ const uiService = {
         const mainContainer = document.getElementById('main-app-container');
         if (welcomeContainer) welcomeContainer.classList.remove('hidden');
         if (mainContainer) mainContainer.classList.add('hidden');
-        // 销毁地图实例，避免后台运行
         this.destroyMap();
     },
 
@@ -444,58 +747,52 @@ const uiService = {
         if (mainContainer) mainContainer.classList.remove('hidden');
     },
 
-    // 清除主应用数据（登出时调用）
     clearAppData() {
-        // 清空表格内容
         const weatherContainer = document.getElementById('weather-table-container');
         if (weatherContainer) weatherContainer.innerHTML = '<div class="text-center text-gray-400 py-8">请选择区域并点击查询</div>';
-        // 清空图表
         const canvas = document.getElementById('temperature-chart');
         if (canvas) {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-        // 清空区域选择器
+        const dataTypeCanvas = document.getElementById('data-type-chart');
+        if (dataTypeCanvas) {
+            const ctx = dataTypeCanvas.getContext('2d');
+            ctx.clearRect(0, 0, dataTypeCanvas.width, dataTypeCanvas.height);
+        }
         const regionSelect = document.getElementById('region-select');
         if (regionSelect) regionSelect.innerHTML = '<option value="">请先登录</option>';
         const addRegionSelect = document.getElementById('add-region-id');
         if (addRegionSelect) addRegionSelect.innerHTML = '<option value="">选择区域</option>';
-        // 销毁地图
         this.destroyMap();
     }
 };
 
 const appController = {
+    isSearching: false,  // 防止重复查询
+    
     async init() {
         this.bindEvents();
         
-        // 检查登录状态
         const token = apiService.getToken();
         const user = apiService.getUser();
         
         if (token && user) {
-            // 已登录，直接显示主应用
             uiService.showMainApp();
             uiService.updateUserInfo();
             await this.loadInitialData();
             await this.initMainApp();
         } else {
-            // 未登录，显示欢迎界面
             uiService.showWelcome();
             uiService.updateUserInfo();
-            // 确保主应用内容清空
             uiService.clearAppData();
         }
     },
     
-    // 主应用初始化（登录后调用）
     async initMainApp() {
-        // 初始化地图（默认成都）
         uiService.initMap(103.988471, 30.581856, '成都');
-        // 加载区域数据
         await uiService.renderRegionSelector('region-select');
         await uiService.renderRegionSelector('add-region-id');
-        // 如果有默认区域，查询天气并更新地图
         const select = document.getElementById('region-select');
         if (select && select.value) {
             await this.searchWeather();
@@ -520,8 +817,8 @@ const appController = {
         document.getElementById('refresh-regions-btn')?.addEventListener('click', () => this.loadRegions());
         document.getElementById('search-region-by-name')?.addEventListener('click', () => this.searchRegionByName());
         document.getElementById('add-weather-btn')?.addEventListener('click', () => this.addWeatherData());
+        document.getElementById('load-trend-btn')?.addEventListener('click', () => this.loadDataTypeTrend());
 
-        // 地图交互事件
         document.getElementById('locate-me')?.addEventListener('click', () => uiService.locateUser());
         document.getElementById('search-position-btn')?.addEventListener('click', () => {
             const keyword = document.getElementById('search-position')?.value;
@@ -534,7 +831,6 @@ const appController = {
             }
         });
         
-        // 欢迎界面按钮事件
         document.getElementById('welcome-login-btn')?.addEventListener('click', () => uiService.showModal('login-modal'));
         document.getElementById('welcome-register-btn')?.addEventListener('click', () => uiService.showModal('register-modal'));
     },
@@ -548,11 +844,8 @@ const appController = {
             uiService.showSuccess('登录成功');
             uiService.hideModal('login-modal');
             uiService.updateUserInfo();
-            // 切换视图
             uiService.showMainApp();
-            // 初始化主应用数据
             await this.initMainApp();
-            // 清空登录表单
             document.getElementById('login-username').value = '';
             document.getElementById('login-password').value = '';
         } catch (err) { uiService.showError(err.message); }
@@ -578,9 +871,7 @@ const appController = {
         if (confirm('确定退出？')) {
             apiService.clearAuth();
             uiService.updateUserInfo();
-            // 清空主应用数据
             uiService.clearAppData();
-            // 切换回欢迎界面
             uiService.showWelcome();
         }
     },
@@ -597,20 +888,100 @@ const appController = {
     },
     
     async searchWeather() {
+        // 防止重复查询
+        if (this.isSearching) return;
+        this.isSearching = true;
+        
         const regionId = document.getElementById('region-select')?.value;
-        if (!regionId) return uiService.showError('请选择区域');
+        if (!regionId) {
+            this.isSearching = false;
+            return uiService.showError('请选择区域');
+        }
+        
+        const start = document.getElementById('start-time')?.value;
+        const end = document.getElementById('end-time')?.value;
+        
         uiService.showLoading('weather-table-container');
         try {
-            const start = document.getElementById('start-time')?.value;
-            const end = document.getElementById('end-time')?.value;
-            const data = await apiService.getWeatherData({ region_id: regionId, start_time: start, end_time: end });
-            if (data.data) {
+            const data = await apiService.getWeatherData({ 
+                region_id: regionId, 
+                start_time: start, 
+                end_time: end 
+            });
+            
+            if (data.data && data.data.length) {
+                // 直接渲染表格
                 uiService.renderWeatherTable(data.data);
-                const temps = data.data.map(d => d.temperature).filter(t => t !== null);
-                if (temps.length) uiService.drawTemperatureChart('temperature-chart', temps);
+                // 绘制温度趋势图
+                const temps = data.data.map(d => d.temperature).filter(t => t !== null && t !== undefined);
+                if (temps.length) {
+                    uiService.drawTemperatureChart('temperature-chart', temps);
+                }
+                // 更新地图
                 await uiService.updateMapByRegionId(regionId);
-            } else uiService.renderWeatherTable([]);
-        } catch (err) { uiService.showError(err.message); uiService.renderWeatherTable([]); }
+            } else {
+                uiService.renderWeatherTable([]);
+                uiService.drawTemperatureChart('temperature-chart', []);
+            }
+        } catch (err) {
+            console.error('查询气象数据失败:', err);
+            uiService.showError(err.message);
+            uiService.renderWeatherTable([]);
+        } finally {
+            this.isSearching = false;
+        }
+    },
+    
+    async loadDataTypeTrend() {
+        const regionId = document.getElementById('region-select')?.value;
+        if (!regionId) return uiService.showError('请先选择区域');
+
+        const dataType = document.getElementById('data-type-select')?.value;
+        if (!dataType) return uiService.showError('请选择数据类型');
+
+        const start = document.getElementById('start-time')?.value;
+        const end = document.getElementById('end-time')?.value;
+
+        try {
+            const result = await apiService.getWeatherData({
+                region_id: regionId,
+                start_time: start,
+                end_time: end,
+                data_type: dataType
+            });
+
+            if (result.data && result.data.length) {
+                const mappedData = result.data.map(item => ({
+                    timestamp: item.timestamp,
+                    value: item[dataType]
+                }));
+                const labelMap = {
+                    temperature: '温度',
+                    humidity: '湿度',
+                    wind_speed: '风速',
+                    precipitation: '降水量'
+                };
+                const unitMap = {
+                    temperature: '°C',
+                    humidity: '%',
+                    wind_speed: 'm/s',
+                    precipitation: 'mm'
+                };
+                uiService.drawLineChart(
+                    'data-type-chart',
+                    mappedData,
+                    labelMap[dataType] || dataType,
+                    unitMap[dataType] || ''
+                );
+                uiService.showSuccess(`${labelMap[dataType]}趋势图加载完成`);
+            } else {
+                uiService.drawLineChart('data-type-chart', []);
+                uiService.showError('所选时间段内无数据');
+            }
+        } catch (err) {
+            uiService.showError(err.message);
+            uiService.drawLineChart('data-type-chart', []);
+        }
     },
     
     async searchRegionByName() {
@@ -677,7 +1048,9 @@ const appController = {
                 await uiService.renderRegionSelector('region-select');
                 await uiService.renderRegionSelector('add-region-id');
             }
-        } catch (err) { uiService.showError(err.message); }
+        } catch (err) { 
+            uiService.showError(err.message); 
+        }
     },
     
     async createRegion() {
