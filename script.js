@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.27.21.241:5000/api/v1',
+    API_BASE_URL: 'http://10.18.234.49:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
@@ -146,30 +146,58 @@ const uiService = {
             }
         } catch (err) { console.error(err); }
     },
-    renderWeatherTable(data, containerId = 'weather-table-container') {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        if (!data || !data.length) {
-            container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
-            return;
-        }
-        let html = `<div class="overflow-x-auto"><table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
-            <th class="px-4 py-2 border">时间</th><th class="px-4 py-2 border">温度(°C)</th><th class="px-4 py-2 border">湿度(%)</th>
-            <th class="px-4 py-2 border">风速(m/s)</th><th class="px-4 py-2 border">风向</th><th class="px-4 py-2 border">降水(mm)</th>
-            </table></thead><tbody>`;
-        data.forEach(item => {
-            html += `<tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 border">${new Date(item.timestamp).toLocaleString()}</td>
-                <td class="px-4 py-2 border">${item.temperature ?? '-'}</td>
-                <td class="px-4 py-2 border">${item.humidity ?? '-'}</td>
-                <td class="px-4 py-2 border">${item.wind_speed ?? '-'}</td>
-                <td class="px-4 py-2 border">${item.wind_direction ?? '-'}</td>
-                <td class="px-4 py-2 border">${item.precipitation ?? '-'}</td>
-               </tr>`;
-        });
-        html += `</tbody></table></div>`;
-        container.innerHTML = html;
-    },
+   renderWeatherTable(data, containerId = 'weather-table-container') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!data || !data.length) {
+        container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
+        return;
+    }
+    
+    let html = `
+        <div class="overflow-x-auto shadow-md rounded-lg">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">时间</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">温度(°C)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">湿度(%)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风速(m/s)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风向</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">降水(mm)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    data.forEach(item => {
+        const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
+        const temperature = item.temperature !== undefined && item.temperature !== null ? item.temperature : '-';
+        const humidity = item.humidity !== undefined && item.humidity !== null ? item.humidity : '-';
+        const windSpeed = item.wind_speed !== undefined && item.wind_speed !== null ? item.wind_speed : '-';
+        const windDirection = item.wind_direction || '-';
+        const precipitation = item.precipitation !== undefined && item.precipitation !== null ? item.precipitation : '-';
+        
+        html += `
+            <tr class="hover:bg-gray-50 border-b border-gray-200">
+                <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${timestamp}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${temperature}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${humidity}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${windSpeed}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${windDirection}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${precipitation}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+},
     drawTemperatureChart(canvasId, data) {
         const canvas = document.getElementById(canvasId);
         if (!canvas || !data || data.length === 0) {
