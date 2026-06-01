@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导出气象数据 - 区域气象监测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">导出气象数据 (CSV)</h1>
+                <a href="index.html" class="text-blue-600 hover:underline">← 返回首页</a>
+            </div>
+
+            <div id="error-message" class="mb-4"></div>
+            <div id="success-message" class="mb-4"></div>
+
+            <form id="export-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">监测区域</label>
+                    <select id="region-id" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">起始时间 (可选)</label>
+                    <input type="datetime-local" id="start-time" class="w-full border rounded-lg px-3 py-2 mt-1">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">结束时间 (可选)</label>
+                    <input type="datetime-local" id="end-time" class="w-full border rounded-lg px-3 py-2 mt-1">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg">
+                    导出 CSV 文件
+                </button>
+            </form>
+            <p class="text-xs text-gray-500 mt-4">* 若不填起始/结束时间，则导出该区域所有数据。</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        (async function() {
+            // 检查登录状态
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('user_info');
+            if (!token || !user) {
+                alert('请先登录');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 加载区域列表
+            async function loadRegions() {
+                try {
+                    const data = await apiService.getRegions();
+                    const select = document.getElementById('region-id');
+                    select.innerHTML = '<option value="">请选择区域</option>';
+                    if (data.data && data.data.length) {
+                        data.data.forEach(region => {
+                            const opt = document.createElement('option');
+                            opt.value = region.id;
+                            opt.textContent = `${region.name} (${region.code || '无编码'})`;
+                            select.appendChild(opt);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">暂无区域数据</option>';
+                    }
+                } catch (err) {
+                    uiService.showError('加载区域失败：' + err.message);
+                }
+            }
+            await loadRegions();
+
+            // 导出表单提交
+            const form = document.getElementById('export-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const region_id = document.getElementById('region-id').value;
+                const start_time = document.getElementById('start-time').value;
+                const end_time = document.getElementById('end-time').value;
+
+                if (!region_id) {
+                    uiService.showError('请选择监测区域');
+                    return;
+                }
+
+                try {
+                    // 调用 apiService 中的导出方法（见下方 script.js 新增）
+                    await apiService.exportWeatherData(region_id, start_time, end_time);
+                    uiService.showSuccess('导出成功，文件开始下载');
+                } catch (err) {
+                    uiService.showError(err.message);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

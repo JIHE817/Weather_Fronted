@@ -90,12 +90,42 @@ const apiService = {
         return this.request('/weather', { method: 'POST', body });
     },
     addWeatherData(data) {
-        return this.request('/weather', { method: 'POST', body: data });
-    },
+    return this.request('/weather/addition', { method: 'POST', body: data });
+},
+
+// 导出气象数据（返回文件流）
+    async exportWeatherData(region_id, start_time = '', end_time = '') {
+        const url = `${CONFIG.API_BASE_URL}/weather/export`;
+        const token = this.getToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        const body = JSON.stringify({ region_id, start_time, end_time });
+
+        const response = await fetch(url, { method: 'POST', headers, body });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `导出失败 (HTTP ${response.status})`);
+        }
+        // 获取文件流并下载
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `weather_export_${region_id}_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+},
+
     getUsers() { return this.request('/users'); },
     updateUserRole(username, role) { return this.request('/users/role', { method: 'PUT', body: { username, role } }); },
     deleteUser(username) { return this.request(`/users/${username}`, { method: 'DELETE' }); }
 };
+
+
 
 const uiService = {
     showError(message, id = 'error-message') {
@@ -955,6 +985,9 @@ const appController = {
             });
             
             if (data.data && data.data.length) {
+
+                // 按时间戳升序排序
+                data.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 // 直接渲染表格
                 uiService.renderWeatherTable(data.data);
                 // 绘制温度趋势图
@@ -996,6 +1029,10 @@ const appController = {
             });
 
             if (result.data && result.data.length) {
+
+                 // 按时间戳升序排序
+                result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
                 const mappedData = result.data.map(item => ({
                     timestamp: item.timestamp,
                     value: item[dataType]
