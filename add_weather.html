@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加气象数据 - 区域气象监测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">手动添加气象数据</h1>
+                <a href="index.html" class="text-blue-600 hover:underline">← 返回首页</a>
+            </div>
+
+            <div id="error-message" class="mb-4"></div>
+            <div id="success-message" class="mb-4"></div>
+
+            <form id="add-weather-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">监测区域</label>
+                    <select id="add-region-id" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">时间</label>
+                    <input type="datetime-local" id="add-timestamp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">温度 (°C)</label>
+                        <input type="number" step="0.1" id="add-temp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">湿度 (%)</label>
+                        <input type="number" step="0.1" id="add-humidity" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">风速 (m/s)</label>
+                        <input type="number" step="0.1" id="add-wind-speed" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">风向</label>
+                        <input type="text" id="add-wind-dir" class="w-full border rounded-lg px-3 py-2 mt-1" placeholder="如：东南风" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">降水量 (mm)</label>
+                        <input type="number" step="0.1" id="add-precip" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg">提交数据</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // 独立页面的逻辑（复用 apiService 和 uiService）
+        (async function() {
+            // 检查登录状态
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('user_info');
+            if (!token || !user) {
+                alert('请先登录');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 加载区域列表
+            async function loadRegions() {
+                try {
+                    const data = await apiService.getRegions();
+                    const select = document.getElementById('add-region-id');
+                    select.innerHTML = '<option value="">请选择区域</option>';
+                    if (data.data && data.data.length) {
+                        data.data.forEach(region => {
+                            const opt = document.createElement('option');
+                            opt.value = region.id;
+                            opt.textContent = `${region.name} (${region.code || '无编码'})`;
+                            select.appendChild(opt);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">暂无区域数据</option>';
+                    }
+                } catch (err) {
+                    uiService.showError('加载区域失败：' + err.message);
+                }
+            }
+
+            await loadRegions();
+
+            // 提交表单
+            const form = document.getElementById('add-weather-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const region_id = document.getElementById('add-region-id').value;
+                const timestamp = document.getElementById('add-timestamp').value;
+                const temperature = document.getElementById('add-temp').value;
+                const humidity = document.getElementById('add-humidity').value;
+                const wind_speed = document.getElementById('add-wind-speed').value;
+                const wind_direction = document.getElementById('add-wind-dir').value;
+                const precipitation = document.getElementById('add-precip').value;
+
+                if (!region_id || !timestamp || !temperature || !humidity || !wind_speed || !wind_direction || !precipitation) {
+                    uiService.showError('请填写所有字段');
+                    return;
+                }
+
+                try {
+                    await apiService.addWeatherData({
+                        region_id: parseInt(region_id),
+                        timestamp,
+                        temperature: parseFloat(temperature),
+                        humidity: parseFloat(humidity),
+                        wind_speed: parseFloat(wind_speed),
+                        wind_direction,
+                        precipitation: parseFloat(precipitation)
+                    });
+                    uiService.showSuccess('气象数据添加成功！');
+                    form.reset();
+                    // 可选：重新加载区域列表（保持选中状态）
+                    await loadRegions();
+                } catch (err) {
+                    uiService.showError(err.message);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

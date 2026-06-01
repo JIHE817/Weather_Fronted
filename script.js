@@ -1,34 +1,50 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.18.234.49:5000/api/v1',
+    API_BASE_URL: 'http://10.19.244.55:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
 
+// 定义前端请求后端的核心工具对象，封装所有与后端通信的逻辑以及本地存储操作
 const apiService = {
-    getToken() { return localStorage.getItem(CONFIG.TOKEN_KEY); },
-    setToken(token) { localStorage.setItem(CONFIG.TOKEN_KEY, token); },
+     // 获取本地存储中的登录token（凭证）
+    getToken() { 
+        return localStorage.getItem(CONFIG.TOKEN_KEY); 
+    },
+    setToken(token) { 
+        localStorage.setItem(CONFIG.TOKEN_KEY, token);
+     },
     clearAuth() {
         localStorage.removeItem(CONFIG.TOKEN_KEY);
         localStorage.removeItem(CONFIG.USER_KEY);
     },
-    setUser(user) { localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)); },
+    setUser(user) { 
+        localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)); 
+    },
+    // 从本地存储取出用户信息并转回对象格式
     getUser() {
         const userStr = localStorage.getItem(CONFIG.USER_KEY);
         return userStr ? JSON.parse(userStr) : null;
     },
+
+     //核心功能：封装统一请求方法，所有前端调用后端接口都走这里，它会自动处理认证、错误、数据格式等细节
     async request(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
         const headers = { 'Content-Type': 'application/json', ...options.headers };
-        if (options.requireAuth !== false) {
+        if (options.requireAuth !== false) {// 判断是否需要登录权限，默认需要，如果 requireAuth 显式设置为 false 则不添加认证信息
             const token = this.getToken();
             if (token) headers['Authorization'] = `Bearer ${token}`;
         }
+
+        // 合并请求配置，并自动将 body 对象转换为 JSON 字符串
         const config = { ...options, headers };
         if (config.body && typeof config.body === 'object') {
             config.body = JSON.stringify(config.body);
         }
         const response = await fetch(url, config);
+        // 将后端返回的数据转成JSON格式 
         const data = await response.json();
+
+         // 如果后端返回401（登录过期），清除登录状态并刷新页面让用户重新登录
         if (response.status === 401) {
             this.clearAuth();
             window.location.reload();
@@ -37,6 +53,9 @@ const apiService = {
         if (!data.success) throw new Error(data.message || '请求失败');
         return data;
     },
+
+
+
     register(username, email, password) {
         return this.request('/auth/register', { method: 'POST', body: { username, email, password }, requireAuth: false });
     },
@@ -843,8 +862,6 @@ const appController = {
         document.getElementById('create-region-btn')?.addEventListener('click', () => this.createRegion());
         document.getElementById('refresh-users-btn')?.addEventListener('click', () => this.loadUsers());
         document.getElementById('refresh-regions-btn')?.addEventListener('click', () => this.loadRegions());
-        document.getElementById('search-region-by-name')?.addEventListener('click', () => this.searchRegionByName());
-        document.getElementById('add-weather-btn')?.addEventListener('click', () => this.addWeatherData());
         document.getElementById('load-trend-btn')?.addEventListener('click', () => this.loadDataTypeTrend());
 
         document.getElementById('locate-me')?.addEventListener('click', () => uiService.locateUser());
@@ -1012,54 +1029,8 @@ const appController = {
         }
     },
     
-    async searchRegionByName() {
-        const name = document.getElementById('search-region-name')?.value.trim();
-        if (!name) return uiService.showError('请输入区域名称');
-        try {
-            const data = await apiService.getRegionByName(name);
-            const region = data.data;
-            if (region) {
-                document.getElementById('region-detail-result').innerHTML = `
-                    <div class="bg-blue-50 p-3 rounded">名称: ${region.name}<br>编码: ${region.code}<br>纬度: ${region.latitude}<br>经度: ${region.longitude}</div>
-                `;
-            } else {
-                document.getElementById('region-detail-result').innerHTML = '<div class="text-red-500">未找到该区域</div>';
-            }
-        } catch (err) { uiService.showError(err.message); }
-    },
+
     
-    async addWeatherData() {
-        const region_id = document.getElementById('add-region-id')?.value;
-        const timestamp = document.getElementById('add-timestamp')?.value;
-        const temperature = document.getElementById('add-temp')?.value;
-        const humidity = document.getElementById('add-humidity')?.value;
-        const wind_speed = document.getElementById('add-wind-speed')?.value;
-        const wind_direction = document.getElementById('add-wind-dir')?.value;
-        const precipitation = document.getElementById('add-precip')?.value;
-        if (!region_id || !timestamp || !temperature || !humidity || !wind_speed || !wind_direction || !precipitation) {
-            return uiService.showError('请完整填写所有字段');
-        }
-        try {
-            await apiService.addWeatherData({
-                region_id: parseInt(region_id),
-                timestamp,
-                temperature: parseFloat(temperature),
-                humidity: parseFloat(humidity),
-                wind_speed: parseFloat(wind_speed),
-                wind_direction,
-                precipitation: parseFloat(precipitation)
-            });
-            uiService.showSuccess('气象数据添加成功');
-            document.getElementById('add-timestamp').value = '';
-            document.getElementById('add-temp').value = '';
-            document.getElementById('add-humidity').value = '';
-            document.getElementById('add-wind-speed').value = '';
-            document.getElementById('add-wind-dir').value = '';
-            document.getElementById('add-precip').value = '';
-            const currentRegion = document.getElementById('region-select')?.value;
-            if (currentRegion == region_id) await this.searchWeather();
-        } catch (err) { uiService.showError(err.message); }
-    },
     
     async loadUsers() {
         try {
@@ -1093,4 +1064,7 @@ const appController = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => appController.init());
+// 仅在主页（包含 map-container 元素）时才执行主页初始化
+if (document.getElementById('map-container')) {
+    document.addEventListener('DOMContentLoaded', () => appController.init());
+}
