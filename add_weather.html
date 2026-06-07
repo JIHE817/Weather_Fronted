@@ -18,9 +18,11 @@
                 <a href="index.html" class="text-blue-600 hover:underline">← 返回首页</a>
             </div>
 
+            <!-- 消息提示区：两个空的 <div> 占位，分别用 id="error-message" 和 id="success-message" 标识，由 JavaScript 动态填充错误提示或成功提示信息。 -->
             <div id="error-message" class="mb-4"></div>
             <div id="success-message" class="mb-4"></div>
 
+            <!-- 表单主体 -->
             <form id="add-weather-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">监测区域</label>
@@ -30,8 +32,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">时间</label>
+                    <!-- <input type="datetime-local"> 日期时间选择器 -->
                     <input type="datetime-local" id="add-timestamp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
                 </div>
+
+                <!-- 用 grid grid-cols-1 md:grid-cols-2 gap-4 将 6 个气象字段排列成响应式两列网格：移动端单列，中等屏幕及以上双列。 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">温度 (°C)</label>
@@ -54,16 +59,18 @@
                         <input type="number" step="0.1" id="add-precip" class="w-full border rounded-lg px-3 py-2 mt-1" required>
                     </div>
                 </div>
+                <!-- 全宽绿色提交按钮，点击后将表单数据提交到后端。 -->
                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg">提交数据</button>
             </form>
         </div>
     </div>
 
+    <!-- 加载 script.js，使其中的 apiService 和 uiService 等工具类在当前页面可用 -->
     <script src="script.js"></script>
     <script>
         // 独立页面的逻辑（复用 apiService 和 uiService）
-        (async function() {
-            // 检查登录状态
+        (async function() {//立即执行函数（第72到140行）
+            // 检查登录状态从 localStorage 读取登录凭证。如果 token 或 user 任一缺失，弹出"请先登录"警告并强制跳转回首页。
             const token = localStorage.getItem('access_token');
             const user = localStorage.getItem('user_info');
             if (!token || !user) {
@@ -93,7 +100,7 @@
                 }
             }
 
-            await loadRegions();
+            await loadRegions();//从 localStorage 读取登录凭证。如果 token 或 user 任一缺失，弹出"请先登录"警告并强制跳转回首页。
 
             // 提交表单
             const form = document.getElementById('add-weather-form');
@@ -109,11 +116,11 @@
 
                 if (!region_id || !timestamp || !temperature || !humidity || !wind_speed || !wind_direction || !precipitation) {
                     uiService.showError('请填写所有字段');
-                    return;
+                    return;//逐个检查所有字段是否填写，任一为空则提示并阻止提交
                 }
 
                 try {
-                    await apiService.addWeatherData({
+                    await apiService.addWeatherData({//调用 apiService.addWeatherData() 将数据 POST 到后端，字段包括区域ID、时间、温度、湿度、风速、风向、降水量
                         region_id: parseInt(region_id),
                         timestamp,
                         temperature: parseFloat(temperature),

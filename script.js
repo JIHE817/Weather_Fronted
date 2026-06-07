@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.19.244.55:5000/api/v1',
+    API_BASE_URL: 'http://10.27.10.182:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
@@ -122,7 +122,74 @@ const apiService = {
 
     getUsers() { return this.request('/users'); },
     updateUserRole(username, role) { return this.request('/users/role', { method: 'PUT', body: { username, role } }); },
-    deleteUser(username) { return this.request(`/users/${username}`, { method: 'DELETE' }); }
+    deleteUser(username) { return this.request(`/users/${username}`, { method: 'DELETE' }); },
+
+// 获取区域边界 GeoJSON（返回 JSON 对象）
+async getRegionBoundary(region_id) {
+    const url = `${CONFIG.API_BASE_URL}/weather/boundary?region_id=${region_id}`;
+    const token = this.getToken();
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `获取边界失败 (HTTP ${response.status})`);
+    }
+    return await response.json();
+},
+
+// 导出区域边界 GeoJSON 文件（下载）
+async exportRegionBoundary(region_id) {
+    const url = `${CONFIG.API_BASE_URL}/weather/boundary/export?region_id=${region_id}`;
+    const token = this.getToken();
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `导出边界失败 (HTTP ${response.status})`);
+    }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    // 从 Content-Disposition 获取文件名，或使用默认名
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `region_${region_id}.geojson`;
+    if (contentDisposition) {
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match && match[1]) filename = match[1].replace(/['"]/g, '');
+    }
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+},
+
+// 上传栅格数据（管理员）
+async uploadRaster(file, data_type, region_id, name = '', resolution = null) {
+    const url = `${CONFIG.API_BASE_URL}/upload/raster`;
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('data_type', data_type);
+    formData.append('region_id', region_id);
+    if (name) formData.append('name', name);
+    if (resolution) formData.append('resolution', resolution);
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || '上传失败');
+    return data;
+}
+    
 };
 
 
@@ -161,6 +228,7 @@ const uiService = {
                     adminPanel.classList.remove('hidden');
                     appController.loadUsers();
                     appController.loadRegions();
+                    appController.loadRasterRegionSelect(); // 新增：加载栅格数据关联区域下拉框
                 } else {
                     adminPanel.classList.add('hidden');
                 }
@@ -569,7 +637,7 @@ const uiService = {
         let html = `<table class="min-w-full bg-white border"><thead><tr class="bg-gray-100">
             <th class="px-4 py-2 border">ID</th><th class="px-4 py-2 border">用户名</th><th class="px-4 py-2 border">邮箱</th>
             <th class="px-4 py-2 border">角色</th><th class="px-4 py-2 border">操作</th>
-            <tr></thead><tbody>`;
+            </tr></thead><tbody>`;
         users.forEach(user => {
             const isSelf = currentUser && currentUser.username === user.username;
             html += `<tr>
@@ -585,7 +653,7 @@ const uiService = {
                 <td class="px-4 py-2 border">
                     ${!isSelf ? `<button class="delete-user bg-red-500 text-white px-2 py-1 rounded text-sm" data-username="${user.username}">删除</button>` : '不可操作自己'}
                 </td>
-             </tr>`;
+              </tr>`;
         });
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -706,32 +774,41 @@ const uiService = {
     },
 
     async updateMapByRegionId(regionId) {
-        if (!regionId) return;
-        try {
-            const data = await apiService.getRegions();
-            const region = data.data?.find(r => r.id == regionId);
-            if (region && region.longitude && region.latitude) {
-                this.initMap(region.longitude, region.latitude, region.name);
+    if (!regionId) return;
+    try {
+        const data = await apiService.getRegions();
+        const region = data.data?.find(r => r.id == regionId);
+        if (region && region.longitude && region.latitude) {
+            // 确保经纬度是数字类型
+            const lng = parseFloat(region.longitude);
+            const lat = parseFloat(region.latitude);
+            if (!isNaN(lng) && !isNaN(lat)) {
+                this.initMap(lng, lat, region.name);
             } else {
                 this.initMap();
             }
-        } catch (err) {
-            console.error('更新地图失败', err);
+        } else {
             this.initMap();
         }
-    },
+    } catch (err) {
+        console.error('更新地图失败', err);
+        this.initMap();
+    }
+},
 
-    updatePositionDisplay(lng, lat) {
-        const posInfo = document.getElementById('position-info');
-        const lngSpan = document.getElementById('current-lng');
-        const latSpan = document.getElementById('current-lat');
-        if (posInfo && lngSpan && latSpan) {
-            lngSpan.textContent = lng.toFixed(6);
-            latSpan.textContent = lat.toFixed(6);
-            posInfo.classList.remove('hidden');
-        }
-    },
-
+   updatePositionDisplay(lng, lat) {
+    const posInfo = document.getElementById('position-info');
+    const lngSpan = document.getElementById('current-lng');
+    const latSpan = document.getElementById('current-lat');
+    if (posInfo && lngSpan && latSpan) {
+        // 确保是数字类型
+        const lngNum = parseFloat(lng);
+        const latNum = parseFloat(lat);
+        lngSpan.textContent = isNaN(lngNum) ? lng : lngNum.toFixed(6);
+        latSpan.textContent = isNaN(latNum) ? lat : latNum.toFixed(6);
+        posInfo.classList.remove('hidden');
+    }
+},
     locateUser() {
         if (!this.mapInstance) {
             uiService.showError('地图尚未初始化');
@@ -903,6 +980,48 @@ const appController = {
             if (e.key === 'Enter') {
                 const keyword = e.target.value;
                 if (keyword) uiService.searchPlace(keyword);
+            }
+        });
+        
+        // 导出区域边界按钮事件
+        document.getElementById('export-boundary-btn')?.addEventListener('click', async () => {
+            const regionId = document.getElementById('region-select')?.value;
+            if (!regionId) {
+                uiService.showError('请先选择一个区域');
+                return;
+            }
+            try {
+                await apiService.exportRegionBoundary(regionId);
+                uiService.showSuccess('区域边界导出成功');
+            } catch (err) {
+                uiService.showError(err.message);
+            }
+        });
+        
+        // 上传栅格数据按钮事件
+        document.getElementById('upload-raster-btn')?.addEventListener('click', async () => {
+            const fileInput = document.getElementById('raster-file');
+            const file = fileInput.files[0];
+            if (!file) {
+                uiService.showError('请选择文件');
+                return;
+            }
+            const dataType = document.getElementById('raster-data-type')?.value;
+            const regionId = document.getElementById('raster-region-id')?.value;
+            if (!regionId) {
+                uiService.showError('请选择关联区域');
+                return;
+            }
+            const name = document.getElementById('raster-name')?.value.trim();
+            const resolution = document.getElementById('raster-resolution')?.value;
+            try {
+                await apiService.uploadRaster(file, dataType, parseInt(regionId), name, resolution ? parseFloat(resolution) : null);
+                uiService.showSuccess('栅格数据上传成功');
+                fileInput.value = '';
+                if (document.getElementById('raster-name')) document.getElementById('raster-name').value = '';
+                if (document.getElementById('raster-resolution')) document.getElementById('raster-resolution').value = '';
+            } catch (err) {
+                uiService.showError(err.message);
             }
         });
         
@@ -1098,6 +1217,27 @@ const appController = {
             document.getElementById('new-region-name').value = '';
             await this.loadRegions();
         } catch (err) { uiService.showError(err.message); }
+    },
+    
+    // 加载栅格数据关联区域下拉框
+    async loadRasterRegionSelect() {
+        try {
+            const data = await apiService.getRegions();
+            const select = document.getElementById('raster-region-id');
+            if (select) {
+                select.innerHTML = '<option value="">请选择区域</option>';
+                if (data.data && data.data.length) {
+                    data.data.forEach(region => {
+                        const opt = document.createElement('option');
+                        opt.value = region.id;
+                        opt.textContent = `${region.name} (${region.code || '无编码'})`;
+                        select.appendChild(opt);
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('加载区域列表失败', err);
+        }
     }
 };
 

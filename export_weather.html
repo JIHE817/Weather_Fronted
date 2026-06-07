@@ -81,7 +81,7 @@
             // 导出表单提交
             const form = document.getElementById('export-form');
             form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+                e.preventDefault();   //导出时读取用户选中的区域 ID
                 const region_id = document.getElementById('region-id').value;
                 const start_time = document.getElementById('start-time').value;
                 const end_time = document.getElementById('end-time').value;
@@ -92,7 +92,7 @@
                 }
 
                 try {
-                    // 调用 apiService 中的导出方法（见下方 script.js 新增）
+                    // 调用 apiService 中的导出方法（见下方 script.js 新增），将监测区域下拉框选中的区域 ID 传给导出接口
                     await apiService.exportWeatherData(region_id, start_time, end_time);
                     uiService.showSuccess('导出成功，文件开始下载');
                 } catch (err) {
