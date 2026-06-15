@@ -1246,3 +1246,60 @@ const appController = {
 if (document.getElementById('map-container')) {
     document.addEventListener('DOMContentLoaded', () => appController.init());
 }
+// 新增：重庆、贵州 坐标映射
+const extraAreaCoord = {
+    "重庆": { lng: 106.551614, lat: 29.563009 },
+    "贵州": { lng: 106.630189, lat: 26.651517 },
+    "贵阳": { lng: 106.630189, lat: 26.651517 }
+};
+
+// 增强【按名称查询区域】：本地兜底匹配重庆/贵州
+const originSearchRegion = appController.searchRegionByName;
+appController.searchRegionByName = async function () {
+    const name = document.getElementById('search-region-name')?.value.trim();
+    if (!name) return uiService.showError('请输入区域名称');
+
+    // 先走原有后端接口逻辑
+    await originSearchRegion.call(this);
+
+    // 后端无数据时，本地匹配重庆/贵州
+    const resHtml = document.getElementById('region-detail-result').innerHTML;
+    if (resHtml.includes("未找到该区域") && extraAreaCoord[name]) {
+        const area = extraAreaCoord[name];
+        document.getElementById('region-detail-result').innerHTML = `
+            <div class="bg-blue-50 p-3 rounded">名称: ${name}<br>纬度: ${area.lat}<br>经度: ${area.lng}</div>
+        `;
+        // 更新页面坐标显示 + 地图定位
+        uiService.updatePositionDisplay(area.lng, area.lat);
+        if(uiService.mapInstance){
+            uiService.mapInstance.setCenter([area.lng, area.lat]);
+            if (uiService.currentMarker) uiService.mapInstance.remove(uiService.currentMarker);
+            uiService.currentMarker = new AMap.Marker({
+                position: [area.lng, area.lat],
+                title: name,
+                map: uiService.mapInstance
+            });
+        }
+    }
+};
+
+// 增强【地图地点搜索】：本地优先匹配重庆/贵州
+const originDoSearch = uiService.doSearchPlace;
+uiService.doSearchPlace = function (keyword) {
+    const key = keyword.trim();
+    if (extraAreaCoord[key]) {
+        const area = extraAreaCoord[key];
+        this.mapInstance.setCenter([area.lng, area.lat]);
+        if (this.currentMarker) this.mapInstance.remove(this.currentMarker);
+        this.currentMarker = new AMap.Marker({
+            position: [area.lng, area.lat],
+            title: key,
+            map: this.mapInstance
+        });
+        this.updatePositionDisplay(area.lng, area.lat);
+        uiService.showSuccess(`已定位到：${key}`);
+        return;
+    }
+    // 本地无匹配，执行原有高德地理编码逻辑
+    originDoSearch.call(this, keyword);
+};
