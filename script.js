@@ -1,10 +1,11 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.27.10.182:5000/api/v1',
+    API_BASE_URL: 'http://10.19.244.55:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
-
+//管理员：80-82，172-191，225行判断是否是管理员
 // 定义前端请求后端的核心工具对象，封装所有与后端通信的逻辑以及本地存储操作
+
 const apiService = {
      // 获取本地存储中的登录token（凭证）
     getToken() { 
@@ -92,7 +93,7 @@ const apiService = {
     addWeatherData(data) {
     return this.request('/weather/addition', { method: 'POST', body: data });
 },
-
+//管理员
 // 导出气象数据（返回文件流）
     async exportWeatherData(region_id, start_time = '', end_time = '') {
         const url = `${CONFIG.API_BASE_URL}/weather/export`;

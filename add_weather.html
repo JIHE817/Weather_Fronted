@@ -79,7 +79,7 @@
                 return;
             }
 
-            // 加载区域列表
+            // 加载区域列表，调接口 → 拿到区域数组 → 遍历生成 <option> → 填充到 <select> 下拉框
             async function loadRegions() {
                 try {
                     const data = await apiService.getRegions();
@@ -102,7 +102,7 @@
 
             await loadRegions();//从 localStorage 读取登录凭证。如果 token 或 user 任一缺失，弹出"请先登录"警告并强制跳转回首页。
 
-            // 提交表单
+            // 提交表单，分别从 7 个表单输入框中读取用户填写的值：
             const form = document.getElementById('add-weather-form');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -120,7 +120,8 @@
                 }
 
                 try {
-                    await apiService.addWeatherData({//调用 apiService.addWeatherData() 将数据 POST 到后端，字段包括区域ID、时间、温度、湿度、风速、风向、降水量
+                    // 调用封装好的 apiService.addWeatherData() 方法，将表单数据以 POST 请求发送到后端
+                    await apiService.addWeatherData({
                         region_id: parseInt(region_id),
                         timestamp,
                         temperature: parseFloat(temperature),
@@ -141,3 +142,6 @@
     </script>
 </body>
 </html>
+<!-- 
+前端录入的气象数据，通过通用script.js31行apiService.request通用方法统一发起网络请求的
+添加的气象数据以 JSON 格式 通过 POST 请求体发送————js41_43行 -->
