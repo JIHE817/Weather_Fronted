@@ -1,38 +1,32 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.19.244.55:5000/api/v1',
+    API_BASE_URL: 'http://10.18.234.49:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
-//管理员：80-82，172-191，225行判断是否是管理员
-// 定义前端请求后端的核心工具对象，封装所有与后端通信的逻辑以及本地存储操作
 
 const apiService = {
-     // 获取本地存储中的登录token（凭证）
-    getToken() { 
-        return localStorage.getItem(CONFIG.TOKEN_KEY); 
+    getToken() {
+        return localStorage.getItem(CONFIG.TOKEN_KEY);
     },
-    setToken(token) { 
+    setToken(token) {
         localStorage.setItem(CONFIG.TOKEN_KEY, token);
-     },
+    },
     clearAuth() {
         localStorage.removeItem(CONFIG.TOKEN_KEY);
         localStorage.removeItem(CONFIG.USER_KEY);
     },
-    setUser(user) { 
-        localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)); 
+    setUser(user) {
+        localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user));
     },
-    // 从本地存储取出用户信息并转回对象格式
     getUser() {
         const userStr = localStorage.getItem(CONFIG.USER_KEY);
         return userStr ? JSON.parse(userStr) : null;
     },
 
-     //核心功能：封装统一请求方法，所有前端调用后端接口都走这里，它会自动处理认证、错误、数据格式等细节
     async request(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
         const headers = { ...options.headers };
 
-        // 只有携带请求体时才设置 JSON Content-Type，避免无谓触发 CORS 预检
         const hasBody = options.body && typeof options.body === 'object';
         if (hasBody) {
             headers['Content-Type'] = 'application/json';
@@ -43,7 +37,6 @@ const apiService = {
             if (token) headers['Authorization'] = `Bearer ${token}`;
         }
 
-        // 构建 fetch 配置，剔除自定义字段 requireAuth
         const { requireAuth, ...fetchOptions } = options;
         const config = { ...fetchOptions, headers };
         if (hasBody) {
@@ -57,7 +50,6 @@ const apiService = {
             throw new Error(`无法连接服务器 (${CONFIG.API_BASE_URL})，请检查后端服务是否启动`);
         }
 
-        // 先用 text 读取原始响应，再用 JSON 解析
         let rawText;
         try {
             rawText = await response.text();
@@ -88,13 +80,10 @@ const apiService = {
         return data;
     },
 
-
-
     register(username, email, password) {
         return this.request('/auth/register', { method: 'POST', body: { username, email, password }, requireAuth: false });
     },
     async login(username, password) {
-        // 清除旧数据，避免残留干扰
         this.clearAuth();
 
         const data = await this.request('/auth/login', {
@@ -108,7 +97,6 @@ const apiService = {
         if (data.data?.access_token) {
             this.setToken(data.data.access_token);
 
-            // 优先从登录响应中提取用户信息
             let userFromLogin = null;
             if (data.data.user && typeof data.data.user === 'object') {
                 userFromLogin = data.data.user;
@@ -122,7 +110,6 @@ const apiService = {
                 console.log('从登录响应 data 平铺字段提取:', userFromLogin);
             }
 
-            // 再从 /auth/me 获取完整用户信息
             let userFromMe = null;
             try {
                 const userData = await this.getCurrentUser();
@@ -134,11 +121,9 @@ const apiService = {
                 console.warn('/auth/me 请求失败:', err.message);
             }
 
-            // 合并：/auth/me 优先，登录响应补充缺失字段
             const mergedUser = { ...(userFromLogin || {}), ...(userFromMe || {}) };
             console.log('合并后用户信息:', mergedUser);
 
-            // 如果两个来源都没有 role 字段，通过调用 /users 探测管理员身份
             if (!mergedUser.role) {
                 console.log('未获取到 role，通过 /users 接口探测管理员身份...');
                 try {
@@ -181,10 +166,8 @@ const apiService = {
         return this.request('/weather', { method: 'POST', body });
     },
     addWeatherData(data) {
-    return this.request('/weather/addition', { method: 'POST', body: data });
-},
-//管理员
-// 导出气象数据（返回文件流）
+        return this.request('/weather/addition', { method: 'POST', body: data });
+    },
     async exportWeatherData(region_id, start_time = '', end_time = '') {
         const url = `${CONFIG.API_BASE_URL}/weather/export`;
         const token = this.getToken();
@@ -199,7 +182,6 @@ const apiService = {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `导出失败 (HTTP ${response.status})`);
         }
-        // 获取文件流并下载
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -209,110 +191,97 @@ const apiService = {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(downloadUrl);
-},
+    },
 
     getUsers() { return this.request('/users'); },
     updateUserRole(username, role) { return this.request('/users/role', { method: 'PUT', body: { username, role } }); },
     deleteUser(username) { return this.request(`/users/${username}`, { method: 'DELETE' }); },
 
-// 获取区域边界 GeoJSON（返回 JSON 对象）
-async getRegionBoundary(region_id) {
-    const url = `${CONFIG.API_BASE_URL}/weather/boundary?region_id=${region_id}`;
-    const token = this.getToken();
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `获取边界失败 (HTTP ${response.status})`);
+    async getRegionBoundary(region_id) {
+        const url = `${CONFIG.API_BASE_URL}/weather/boundary?region_id=${region_id}`;
+        const token = this.getToken();
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `获取边界失败 (HTTP ${response.status})`);
+        }
+        return await response.json();
+    },
+
+    async exportRegionBoundary(region_id) {
+        const url = `${CONFIG.API_BASE_URL}/weather/boundary/export?region_id=${region_id}`;
+        const token = this.getToken();
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `导出边界失败 (HTTP ${response.status})`);
+        }
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `region_${region_id}.geojson`;
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (match && match[1]) filename = match[1].replace(/['"]/g, '');
+        }
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+    },
+
+    async uploadRaster(file, data_type, region_id, name = '', resolution = null) {
+        const url = `${CONFIG.API_BASE_URL}/upload/raster`;
+        const token = this.getToken();
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('data_type', data_type);
+        formData.append('region_id', region_id);
+        if (name) formData.append('name', name);
+        if (resolution) formData.append('resolution', resolution);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || '上传失败');
+        return data;
+    },
+
+    async getRasterData(region_id, data_type, resolution = null, bbox = null) {
+        const params = new URLSearchParams();
+        params.append('region_id', region_id);
+        params.append('data_type', data_type);
+        if (resolution) params.append('resolution', resolution);
+        if (bbox) params.append('bbox', bbox);
+
+        const url = `/raster/data?${params.toString()}`;
+        return this.request(url, { method: 'GET' });
+    },
+
+    async getCurrentAlert(region_id) {
+        return this.request(`/alerts/current?region_id=${region_id}`, { method: 'GET' });
+    },
+
+    async getDroughtIndex(region_id) {
+        return this.request(`/indices/drought?region_id=${region_id}`, { method: 'GET' });
+    },
+
+    async getTerrainAnalysis(region_id) {
+        return this.request(`/analysis/terrain?region_id=${region_id}`, { method: 'GET' });
     }
-    return await response.json();
-},
-
-// 导出区域边界 GeoJSON 文件（下载）
-async exportRegionBoundary(region_id) {
-    const url = `${CONFIG.API_BASE_URL}/weather/boundary/export?region_id=${region_id}`;
-    const token = this.getToken();
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `导出边界失败 (HTTP ${response.status})`);
-    }
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    // 从 Content-Disposition 获取文件名，或使用默认名
-    const contentDisposition = response.headers.get('Content-Disposition');
-    let filename = `region_${region_id}.geojson`;
-    if (contentDisposition) {
-        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (match && match[1]) filename = match[1].replace(/['"]/g, '');
-    }
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(downloadUrl);
-},
-
-// 上传栅格数据（管理员）
-async uploadRaster(file, data_type, region_id, name = '', resolution = null) {
-    const url = `${CONFIG.API_BASE_URL}/upload/raster`;
-    const token = this.getToken();
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('data_type', data_type);
-    formData.append('region_id', region_id);
-    if (name) formData.append('name', name);
-    if (resolution) formData.append('resolution', resolution);
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-    });
-    const data = await response.json();
-    if (!data.success) throw new Error(data.message || '上传失败');
-    return data;
-},
-
-// ==================== 栅格数据接口 ====================
-// 查询栅格数据
-async getRasterData(region_id, data_type, resolution = null, bbox = null) {
-    const params = new URLSearchParams();
-    params.append('region_id', region_id);
-    params.append('data_type', data_type);
-    if (resolution) params.append('resolution', resolution);
-    if (bbox) params.append('bbox', bbox);
-    
-    const url = `/raster/data?${params.toString()}`;
-    return this.request(url, { method: 'GET' });
-},
-
-// ==================== 预警与空间分析接口 ====================
-// 获取当前区域预警
-async getCurrentAlert(region_id) {
-    return this.request(`/alerts/current?region_id=${region_id}`, { method: 'GET' });
-},
-
-// 计算干旱指数
-async getDroughtIndex(region_id) {
-    return this.request(`/indices/drought?region_id=${region_id}`, { method: 'GET' });
-},
-
-// 地形统计分析
-async getTerrainAnalysis(region_id) {
-    return this.request(`/analysis/terrain?region_id=${region_id}`, { method: 'GET' });
-}
-    
 };
-
-
 
 const uiService = {
     showError(message, id = 'error-message') {
@@ -371,7 +340,6 @@ const uiService = {
             const data = await apiService.getRegions();
             const select = document.getElementById(selectId);
             if (!select) return;
-            // 保存当前选中的值
             const currentValue = select.value;
             select.innerHTML = '<option value="">请选择区域</option>';
             if (data.data?.length) {
@@ -383,64 +351,63 @@ const uiService = {
                     select.appendChild(opt);
                 });
             }
-            // 恢复之前选中的值
             if (currentValue && !selectedId) {
                 select.value = currentValue;
             }
         } catch (err) { console.error(err); }
     },
-   renderWeatherTable(data, containerId = 'weather-table-container') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    if (!data || !data.length) {
-        container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
-        return;
-    }
-    
-    let html = `
-        <div class="overflow-x-auto shadow-md rounded-lg">
-            <table class="min-w-full bg-white border border-gray-200">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">时间</th>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">温度(°C)</th>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">湿度(%)</th>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风速(m/s)</th>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风向</th>
-                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">降水(mm)</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    data.forEach(item => {
-        const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
-        const temperature = item.temperature !== undefined && item.temperature !== null ? item.temperature : '-';
-        const humidity = item.humidity !== undefined && item.humidity !== null ? item.humidity : '-';
-        const windSpeed = item.wind_speed !== undefined && item.wind_speed !== null ? item.wind_speed : '-';
-        const windDirection = item.wind_direction || '-';
-        const precipitation = item.precipitation !== undefined && item.precipitation !== null ? item.precipitation : '-';
-        
-        html += `
-            <tr class="hover:bg-gray-50 border-b border-gray-200">
-                <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${timestamp}</td>
-                <td class="px-4 py-2 text-sm text-gray-700">${temperature}</td>
-                <td class="px-4 py-2 text-sm text-gray-700">${humidity}</td>
-                <td class="px-4 py-2 text-sm text-gray-700">${windSpeed}</td>
-                <td class="px-4 py-2 text-sm text-gray-700">${windDirection}</td>
-                <td class="px-4 py-2 text-sm text-gray-700">${precipitation}</td>
-            </tr>
+    renderWeatherTable(data, containerId = 'weather-table-container') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!data || !data.length) {
+            container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
+            return;
+        }
+
+        let html = `
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table class="min-w-full bg-white border border-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">时间</th>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">温度(°C)</th>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">湿度(%)</th>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风速(m/s)</th>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风向</th>
+                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">降水(mm)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
         `;
-    });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    container.innerHTML = html;
-},
+
+        data.forEach(item => {
+            const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
+            const temperature = item.temperature !== undefined && item.temperature !== null ? item.temperature : '-';
+            const humidity = item.humidity !== undefined && item.humidity !== null ? item.humidity : '-';
+            const windSpeed = item.wind_speed !== undefined && item.wind_speed !== null ? item.wind_speed : '-';
+            const windDirection = item.wind_direction || '-';
+            const precipitation = item.precipitation !== undefined && item.precipitation !== null ? item.precipitation : '-';
+
+            html += `
+                <tr class="hover:bg-gray-50 border-b border-gray-200">
+                    <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${timestamp}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">${temperature}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">${humidity}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">${windSpeed}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">${windDirection}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700">${precipitation}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    },
     drawTemperatureChart(canvasId, data) {
         const canvas = document.getElementById(canvasId);
         if (!canvas || !data || data.length === 0) {
@@ -460,11 +427,11 @@ const uiService = {
         const ctx = canvas.getContext('2d');
         const width = canvas.clientWidth;
         const height = canvas.clientHeight;
-        
+
         canvas.width = width;
         canvas.height = height;
         ctx.clearRect(0, 0, width, height);
-        
+
         const validData = data.filter(t => t !== null && t !== undefined);
         if (validData.length === 0) {
             ctx.fillStyle = '#999';
@@ -472,87 +439,83 @@ const uiService = {
             ctx.fillText('无有效温度数据', width/2 - 50, height/2);
             return;
         }
-        
+
         const maxTemp = Math.max(...validData);
         const minTemp = Math.min(...validData);
         const range = maxTemp - minTemp;
         const actualRange = range === 0 ? 10 : range;
         const padding = actualRange * 0.1;
-        
+
         const yMin = minTemp - padding;
         const yMax = maxTemp + padding;
         const yRange = yMax - yMin;
-        
+
         const margin = { top: 40, right: 30, bottom: 40, left: 50 };
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
         const stepX = chartWidth / (validData.length - 1);
-        
+
         ctx.save();
-        
-        // 绘制坐标轴
+
         ctx.beginPath();
         ctx.strokeStyle = '#ccc';
         ctx.lineWidth = 1;
         ctx.moveTo(margin.left, height - margin.bottom);
         ctx.lineTo(width - margin.right, height - margin.bottom);
         ctx.stroke();
-        
+
         ctx.beginPath();
         ctx.moveTo(margin.left, margin.top);
         ctx.lineTo(margin.left, height - margin.bottom);
         ctx.stroke();
-        
-        // Y轴刻度
+
         ctx.fillStyle = '#666';
         ctx.font = '11px Arial';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        
+
         const yTickCount = 5;
         for (let i = 0; i <= yTickCount; i++) {
             const yValue = yMin + (i / yTickCount) * yRange;
             const y = height - margin.bottom - (i / yTickCount) * chartHeight;
-            
+
             ctx.beginPath();
             ctx.strokeStyle = '#e0e0e0';
             ctx.moveTo(margin.left - 5, y);
             ctx.lineTo(margin.left, y);
             ctx.stroke();
-            
+
             ctx.beginPath();
             ctx.strokeStyle = '#f0f0f0';
             ctx.moveTo(margin.left, y);
             ctx.lineTo(width - margin.right, y);
             ctx.stroke();
-            
+
             ctx.fillStyle = '#666';
             ctx.fillText(yValue.toFixed(1) + '°C', margin.left - 8, y);
         }
-        
-        // X轴标签
+
         ctx.fillStyle = '#666';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        
+
         const xLabelCount = Math.min(5, validData.length);
         for (let i = 0; i < xLabelCount; i++) {
             const dataIndex = Math.floor((i / (xLabelCount - 1)) * (validData.length - 1));
             const x = margin.left + dataIndex * stepX;
             ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
         }
-        
-        // 绘制折线
+
         ctx.beginPath();
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 2.5;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        
+
         let firstPoint = true;
         const points = [];
-        
+
         for (let i = 0; i < validData.length; i++) {
             const x = margin.left + i * stepX;
             const y = height - margin.bottom - ((validData[i] - yMin) / yRange) * chartHeight;
@@ -565,35 +528,34 @@ const uiService = {
             }
         }
         ctx.stroke();
-        
-        // 绘制数据点
+
         for (let i = 0; i < points.length; i++) {
             ctx.beginPath();
             ctx.fillStyle = '#3b82f6';
             ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
             ctx.fill();
-            
+
             ctx.beginPath();
             ctx.fillStyle = '#fff';
             ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
             ctx.fill();
-            
+
             ctx.fillStyle = '#1f2937';
             ctx.font = 'bold 10px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             ctx.fillText(points[i].temp.toFixed(1) + '°C', points[i].x, points[i].y - 6);
         }
-        
+
         ctx.fillStyle = '#374151';
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('温度变化趋势图', width / 2, margin.top - 15);
-        
+
         ctx.fillStyle = '#6b7280';
         ctx.font = '11px Arial';
         ctx.fillText('时间序列', width / 2, height - 10);
-        
+
         ctx.save();
         ctx.translate(18, height / 2);
         ctx.rotate(-Math.PI / 2);
@@ -602,11 +564,10 @@ const uiService = {
         ctx.textAlign = 'center';
         ctx.fillText('温度 (°C)', 0, 0);
         ctx.restore();
-        
+
         ctx.restore();
     },
-    
-    // 新增 drawLineChart 方法（用于数据类型趋势图）
+
     drawLineChart(canvasId, data, label, unit) {
         const canvas = document.getElementById(canvasId);
         if (!canvas || !data || data.length === 0) {
@@ -625,90 +586,90 @@ const uiService = {
         const ctx = canvas.getContext('2d');
         const width = canvas.clientWidth;
         const height = canvas.clientHeight;
-        
+
         canvas.width = width;
         canvas.height = height;
         ctx.clearRect(0, 0, width, height);
-        
+
         const values = data.map(item => item.value !== undefined ? item.value : item);
         if (values.length === 0) return;
-        
+
         const maxVal = Math.max(...values, 0);
         const minVal = Math.min(...values, 0);
         const range = maxVal - minVal;
         const actualRange = range === 0 ? 10 : range;
         const padding = actualRange * 0.1;
-        
+
         const yMin = minVal - padding;
         const yMax = maxVal + padding;
         const yRange = yMax - yMin;
-        
+
         const margin = { top: 40, right: 30, bottom: 40, left: 50 };
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
         const stepX = chartWidth / (values.length - 1);
-        
+
         ctx.save();
-        
+
         ctx.beginPath();
         ctx.strokeStyle = '#ccc';
         ctx.lineWidth = 1;
         ctx.moveTo(margin.left, height - margin.bottom);
         ctx.lineTo(width - margin.right, height - margin.bottom);
         ctx.stroke();
-        
+
         ctx.beginPath();
         ctx.moveTo(margin.left, margin.top);
         ctx.lineTo(margin.left, height - margin.bottom);
         ctx.stroke();
-        
+
         ctx.fillStyle = '#666';
         ctx.font = '11px Arial';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        
+
         const yTickCount = 5;
         for (let i = 0; i <= yTickCount; i++) {
             const yValue = yMin + (i / yTickCount) * yRange;
             const y = height - margin.bottom - (i / yTickCount) * chartHeight;
-            
+
             ctx.beginPath();
             ctx.strokeStyle = '#e0e0e0';
             ctx.moveTo(margin.left - 5, y);
             ctx.lineTo(margin.left, y);
             ctx.stroke();
-            
+
             ctx.beginPath();
             ctx.strokeStyle = '#f0f0f0';
             ctx.moveTo(margin.left, y);
             ctx.lineTo(width - margin.right, y);
             ctx.stroke();
-            
+
             ctx.fillStyle = '#666';
             ctx.fillText(yValue.toFixed(1), margin.left - 8, y);
         }
-        
+
         ctx.fillStyle = '#666';
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        
+
         const xLabelCount = Math.min(5, values.length);
         for (let i = 0; i < xLabelCount; i++) {
             const dataIndex = Math.floor((i / (xLabelCount - 1)) * (values.length - 1));
             const x = margin.left + dataIndex * stepX;
             ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
         }
-        
+
         ctx.beginPath();
         ctx.strokeStyle = '#f97316';
         ctx.lineWidth = 2.5;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        
+
         let firstPoint = true;
         const points = [];
-        
+
         for (let i = 0; i < values.length; i++) {
             const x = margin.left + i * stepX;
             const y = height - margin.bottom - ((values[i] - yMin) / yRange) * chartHeight;
@@ -721,28 +682,28 @@ const uiService = {
             }
         }
         ctx.stroke();
-        
+
         for (let i = 0; i < points.length; i++) {
             ctx.beginPath();
             ctx.fillStyle = '#f97316';
             ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
             ctx.fill();
-            
+
             ctx.beginPath();
             ctx.fillStyle = '#fff';
             ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
             ctx.fill();
         }
-        
+
         ctx.fillStyle = '#374151';
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(`${label}趋势图`, width / 2, margin.top - 15);
-        
+
         ctx.fillStyle = '#6b7280';
         ctx.font = '11px Arial';
         ctx.fillText('时间序列', width / 2, height - 10);
-        
+
         ctx.save();
         ctx.translate(18, height / 2);
         ctx.rotate(-Math.PI / 2);
@@ -751,10 +712,10 @@ const uiService = {
         ctx.textAlign = 'center';
         ctx.fillText(`${label} (${unit})`, 0, 0);
         ctx.restore();
-        
+
         ctx.restore();
     },
-    
+
     renderUsersList(users) {
         const container = document.getElementById('users-list');
         if (!container) return;
@@ -844,6 +805,31 @@ const uiService = {
     mapInstance: null,
     geocoder: null,
     currentMarker: null,
+    _mapClickCallback: null,
+
+    setMapClickCallback(callback) {
+        this._mapClickCallback = callback;
+    },
+
+    showInfoWindow(lng, lat, content) {
+        console.log('showInfoWindow 被调用，经纬度:', lng, lat, '内容:', content);
+        if (!this.mapInstance) {
+            console.warn('地图未初始化，无法显示信息窗');
+            uiService.showToast('地图尚未加载完成，无法显示气象信息', 'error');
+            return;
+        }
+        try {
+            const infoWindow = new AMap.InfoWindow({
+                content: `<div style="padding:12px;font-size:14px;max-width:300px;">${content}</div>`,
+                offset: new AMap.Pixel(0, -30)
+            });
+            infoWindow.open(this.mapInstance, new AMap.LngLat(lng, lat));
+            console.log('信息窗已打开');
+        } catch (err) {
+            console.error('打开信息窗失败:', err);
+            uiService.showToast('显示信息窗失败: ' + err.message, 'error');
+        }
+    },
 
     destroyMap() {
         if (this.mapInstance) {
@@ -874,20 +860,22 @@ const uiService = {
             center: [lng, lat],
             viewMode: '3D'
         });
-        
-        // 异步加载 Geocoder
+
         AMap.plugin(['AMap.Geocoder'], () => {
             this.geocoder = new AMap.Geocoder({
                 city: '全国',
                 radius: 1000
             });
         });
-        
+
         this.mapInstance.on('click', (e) => {
             const lng = e.lnglat.getLng();
             const lat = e.lnglat.getLat();
             this.updatePositionDisplay(lng, lat);
             uiService.showSuccess(`点击坐标：${lng.toFixed(6)}, ${lat.toFixed(6)}`);
+            if (this._mapClickCallback) {
+                this._mapClickCallback(lng, lat);
+            }
         });
 
         this.currentMarker = new AMap.Marker({
@@ -900,41 +888,39 @@ const uiService = {
     },
 
     async updateMapByRegionId(regionId) {
-    if (!regionId) return;
-    try {
-        const data = await apiService.getRegions();
-        const region = data.data?.find(r => r.id == regionId);
-        if (region && region.longitude && region.latitude) {
-            // 确保经纬度是数字类型
-            const lng = parseFloat(region.longitude);
-            const lat = parseFloat(region.latitude);
-            if (!isNaN(lng) && !isNaN(lat)) {
-                this.initMap(lng, lat, region.name);
+        if (!regionId) return;
+        try {
+            const data = await apiService.getRegions();
+            const region = data.data?.find(r => r.id == regionId);
+            if (region && region.longitude && region.latitude) {
+                const lng = parseFloat(region.longitude);
+                const lat = parseFloat(region.latitude);
+                if (!isNaN(lng) && !isNaN(lat)) {
+                    this.initMap(lng, lat, region.name);
+                } else {
+                    this.initMap();
+                }
             } else {
                 this.initMap();
             }
-        } else {
+        } catch (err) {
+            console.error('更新地图失败', err);
             this.initMap();
         }
-    } catch (err) {
-        console.error('更新地图失败', err);
-        this.initMap();
-    }
-},
+    },
 
-   updatePositionDisplay(lng, lat) {
-    const posInfo = document.getElementById('position-info');
-    const lngSpan = document.getElementById('current-lng');
-    const latSpan = document.getElementById('current-lat');
-    if (posInfo && lngSpan && latSpan) {
-        // 确保是数字类型
-        const lngNum = parseFloat(lng);
-        const latNum = parseFloat(lat);
-        lngSpan.textContent = isNaN(lngNum) ? lng : lngNum.toFixed(6);
-        latSpan.textContent = isNaN(latNum) ? lat : latNum.toFixed(6);
-        posInfo.classList.remove('hidden');
-    }
-},
+    updatePositionDisplay(lng, lat) {
+        const posInfo = document.getElementById('position-info');
+        const lngSpan = document.getElementById('current-lng');
+        const latSpan = document.getElementById('current-lat');
+        if (posInfo && lngSpan && latSpan) {
+            const lngNum = parseFloat(lng);
+            const latNum = parseFloat(lat);
+            lngSpan.textContent = isNaN(lngNum) ? lng : lngNum.toFixed(6);
+            latSpan.textContent = isNaN(latNum) ? lat : latNum.toFixed(6);
+            posInfo.classList.remove('hidden');
+        }
+    },
     locateUser() {
         if (!this.mapInstance) {
             uiService.showError('地图尚未初始化');
@@ -957,6 +943,9 @@ const uiService = {
                 });
                 this.updatePositionDisplay(lng, lat);
                 uiService.showSuccess(`已定位到经度 ${lng.toFixed(6)}，纬度 ${lat.toFixed(6)}`);
+                if (this._mapClickCallback) {
+                    this._mapClickCallback(lng, lat);
+                }
             },
             (error) => {
                 let msg = '定位失败';
@@ -972,7 +961,6 @@ const uiService = {
 
     searchPlace(keyword) {
         if (!this.geocoder) {
-            // 尝试重新加载
             AMap.plugin(['AMap.Geocoder'], () => {
                 this.geocoder = new AMap.Geocoder({
                     city: '全国',
@@ -984,7 +972,7 @@ const uiService = {
         }
         this.doSearchPlace(keyword);
     },
-    
+
     doSearchPlace(keyword) {
         if (!keyword.trim()) {
             uiService.showError('请输入搜索关键词');
@@ -1005,6 +993,9 @@ const uiService = {
                 });
                 this.updatePositionDisplay(lng, lat);
                 uiService.showSuccess(`已定位到：${formattedAddress || keyword}`);
+                if (this._mapClickCallback) {
+                    this._mapClickCallback(lng, lat);
+                }
             } else {
                 uiService.showError(`未找到地点“${keyword}”`);
             }
@@ -1105,7 +1096,6 @@ const uiService = {
         daysEl.innerHTML = html;
     },
 
-    // ==================== Toast 弹窗通知 ====================
     showToast(message, type = 'success') {
         const overlay = document.getElementById('toast-overlay');
         const box = document.getElementById('toast-box');
@@ -1147,14 +1137,16 @@ const uiService = {
 };
 
 const appController = {
-    isSearching: false,  // 防止重复查询
-    
+    isSearching: false,
+
     async init() {
         this.bindEvents();
-        
+
+        uiService.setMapClickCallback((lng, lat) => this.handleMapLocation(lng, lat));
+
         const token = apiService.getToken();
         const user = apiService.getUser();
-        
+
         if (token && user) {
             uiService.showMainApp();
             uiService.updateUserInfo();
@@ -1166,7 +1158,7 @@ const appController = {
             uiService.clearAppData();
         }
     },
-    
+
     async initMainApp() {
         uiService.initMap(103.988471, 30.581856, '成都');
         uiService.startClock();
@@ -1179,7 +1171,7 @@ const appController = {
             await uiService.updateMapByRegionId(select.value);
         }
     },
-    
+
     bindEvents() {
         document.getElementById('login-form')?.addEventListener('submit', e => { e.preventDefault(); this.handleLogin(); });
         document.getElementById('register-form')?.addEventListener('submit', e => { e.preventDefault(); this.handleRegister(); });
@@ -1208,8 +1200,13 @@ const appController = {
                 if (keyword) uiService.searchPlace(keyword);
             }
         });
-        
-        // 导出区域边界按钮事件
+
+        // ===== 新增：区域搜索（气象检索区域） =====
+        document.getElementById('search-region-go')?.addEventListener('click', () => this.searchRegionAndLoad());
+        document.getElementById('search-region-input')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.searchRegionAndLoad();
+        });
+
         document.getElementById('export-boundary-btn')?.addEventListener('click', async () => {
             const regionId = document.getElementById('region-select')?.value;
             if (!regionId) {
@@ -1223,8 +1220,7 @@ const appController = {
                 uiService.showError(err.message);
             }
         });
-        
-        // 上传栅格数据按钮事件
+
         document.getElementById('upload-raster-btn')?.addEventListener('click', async () => {
             const fileInput = document.getElementById('raster-file');
             const file = fileInput.files[0];
@@ -1254,7 +1250,6 @@ const appController = {
         document.getElementById('welcome-login-btn')?.addEventListener('click', () => uiService.showModal('login-modal'));
         document.getElementById('welcome-register-btn')?.addEventListener('click', () => uiService.showModal('register-modal'));
 
-        // ===== 管理员标签页切换 =====
         document.querySelectorAll('.admin-tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.admin-tab-btn').forEach(b => {
@@ -1276,7 +1271,6 @@ const appController = {
             });
         });
 
-        // ===== 右侧功能菜单：管理员控制台按钮（滚动到管理员面板） =====
         document.getElementById('admin-console-btn')?.addEventListener('click', () => {
             const adminPanel = document.getElementById('admin-panel');
             if (adminPanel) {
@@ -1284,9 +1278,7 @@ const appController = {
             }
         });
 
-        // =============================================================
-        // ===== 新增：栅格数据查询 =====
-        // =============================================================
+        // ===== 栅格查询 =====
         document.getElementById('query-raster-btn')?.addEventListener('click', async () => {
             const regionId = document.getElementById('region-select')?.value;
             if (!regionId) {
@@ -1295,14 +1287,14 @@ const appController = {
             }
             const dataType = document.getElementById('raster-data-type-query')?.value;
             const resolution = document.getElementById('raster-resolution-query')?.value;
-            
+
             try {
                 const result = await apiService.getRasterData(
-                    parseInt(regionId), 
-                    dataType, 
+                    parseInt(regionId),
+                    dataType,
                     resolution ? parseInt(resolution) : null
                 );
-                
+
                 const display = document.getElementById('raster-data-display');
                 const container = document.getElementById('raster-result');
                 if (result.data) {
@@ -1315,7 +1307,7 @@ const appController = {
                     if (data.resolution_deg) info += `分辨率: ${data.resolution_deg}°\n`;
                     if (data.is_simulated) info += `⚠️ 模拟数据（实际数据不存在）\n`;
                     if (data.grid) {
-                        const gridPreview = data.grid.slice(0, 5).map(row => 
+                        const gridPreview = data.grid.slice(0, 5).map(row =>
                             row.slice(0, 5).map(v => v.toFixed(2)).join(', ') + (row.length > 5 ? '...' : '')
                         );
                         info += `\n网格预览 (前5×5):\n${gridPreview.join('\n')}`;
@@ -1330,9 +1322,7 @@ const appController = {
             }
         });
 
-        // =============================================================
-        // ===== 新增：查询当前预警 =====
-        // =============================================================
+        // ===== 预警 =====
         document.getElementById('query-alert-btn')?.addEventListener('click', async () => {
             const regionId = document.getElementById('region-select')?.value;
             if (!regionId) {
@@ -1358,8 +1348,7 @@ const appController = {
                     }
                     display.textContent = info;
                     container.classList.remove('hidden');
-                    
-                    // 根据预警级别显示不同颜色提示
+
                     if (data.alert_level === '红色') {
                         uiService.showToast('⚠️ 红色预警！请立即采取防范措施！', 'error');
                     } else if (data.alert_level === '橙色') {
@@ -1375,9 +1364,7 @@ const appController = {
             }
         });
 
-        // =============================================================
-        // ===== 新增：查询干旱指数 =====
-        // =============================================================
+        // ===== 干旱 =====
         document.getElementById('query-drought-btn')?.addEventListener('click', async () => {
             const regionId = document.getElementById('region-select')?.value;
             if (!regionId) {
@@ -1400,7 +1387,7 @@ const appController = {
                     }
                     display.textContent = info;
                     container.classList.remove('hidden');
-                    
+
                     if (data.drought_level === '重度干旱') {
                         uiService.showToast('⚠️ 重度干旱，需采取紧急措施', 'error');
                     } else if (data.drought_level === '中度干旱') {
@@ -1416,9 +1403,7 @@ const appController = {
             }
         });
 
-        // =============================================================
-        // ===== 新增：地形统计分析 =====
-        // =============================================================
+        // ===== 地形 =====
         document.getElementById('query-terrain-btn')?.addEventListener('click', async () => {
             const regionId = document.getElementById('region-select')?.value;
             if (!regionId) {
@@ -1448,7 +1433,89 @@ const appController = {
             }
         });
     },
-    
+
+    // ===== 新增：按区域名称搜索并加载 =====
+    async searchRegionAndLoad() {
+        const input = document.getElementById('search-region-input');
+        const keyword = input?.value.trim();
+        if (!keyword) {
+            uiService.showError('请输入城市名');
+            return;
+        }
+        try {
+            const data = await apiService.getRegions();
+            const regions = data.data || [];
+            const matched = regions.find(r => r.name.includes(keyword) || keyword.includes(r.name));
+            if (!matched) {
+                uiService.showError(`未找到与“${keyword}”匹配的区域`);
+                return;
+            }
+            const select = document.getElementById('region-select');
+            if (select) {
+                select.value = matched.id;
+                await this.searchWeather();
+                await uiService.updateMapByRegionId(matched.id);
+                uiService.showSuccess(`已切换到区域：${matched.name}`);
+                input.value = '';
+            }
+        } catch (err) {
+            uiService.showError('获取区域列表失败：' + err.message);
+        }
+    },
+
+    // ===== 地图点击/搜索处理 =====
+    async handleMapLocation(lng, lat) {
+        console.log('handleMapLocation 被调用，坐标:', lng, lat);
+        if (!uiService.geocoder) {
+            await new Promise((resolve) => {
+                AMap.plugin(['AMap.Geocoder'], () => {
+                    uiService.geocoder = new AMap.Geocoder({ city: '全国', radius: 1000 });
+                    resolve();
+                });
+            });
+        }
+
+        return new Promise((resolve) => {
+            uiService.geocoder.getAddress(new AMap.LngLat(lng, lat), async (status, result) => {
+                if (status === 'complete' && result.info === 'OK') {
+                    const address = result.regeocode.formattedAddress;
+                    const comp = result.regeocode.addressComponent;
+                    let locationName = comp.city || comp.district || comp.province;
+                    if (!locationName) {
+                        uiService.showToast('无法识别该位置所属区域', 'error');
+                        resolve();
+                        return;
+                    }
+
+                    try {
+                        const regionsData = await apiService.getRegions();
+                        const matched = regionsData.data.find(region =>
+                            address.includes(region.name) || locationName.includes(region.name)
+                        );
+                        if (matched) {
+                            const select = document.getElementById('region-select');
+                            if (select) {
+                                select.value = matched.id;
+                                await this.searchWeather();
+                                await uiService.updateMapByRegionId(matched.id);
+                                uiService.showToast(`已切换到区域：${matched.name}，数据已更新`, 'success');
+                            }
+                        } else {
+                            const content = `📍 ${locationName}<br><span style="color:#999;">未关联气象区域</span>`;
+                            uiService.showInfoWindow(lng, lat, content);
+                            uiService.showToast(`位置“${locationName}”未关联任何气象区域`, 'error');
+                        }
+                    } catch (err) {
+                        uiService.showError('获取区域列表失败：' + err.message);
+                    }
+                } else {
+                    uiService.showError('逆地理编码失败，无法识别位置');
+                }
+                resolve();
+            });
+        });
+    },
+
     async handleLogin() {
         const username = document.getElementById('login-username')?.value;
         const password = document.getElementById('login-password')?.value;
@@ -1464,7 +1531,7 @@ const appController = {
             document.getElementById('login-password').value = '';
         } catch (err) { uiService.showError(err.message); }
     },
-    
+
     async handleRegister() {
         const username = document.getElementById('reg-username')?.value;
         const email = document.getElementById('reg-email')?.value;
@@ -1480,7 +1547,7 @@ const appController = {
             uiService.showModal('login-modal');
         } catch (err) { uiService.showError(err.message); }
     },
-    
+
     handleLogout() {
         if (confirm('确定退出？')) {
             apiService.clearAuth();
@@ -1489,7 +1556,7 @@ const appController = {
             uiService.showWelcome();
         }
     },
-    
+
     async loadInitialData() {
         try {
             await uiService.renderRegionSelector('region-select');
@@ -1500,21 +1567,21 @@ const appController = {
             }
         } catch (err) { console.error(err); }
     },
-    
+
+    // ===== 核心：搜索天气 =====
     async searchWeather() {
-        // 防止重复查询
         if (this.isSearching) return;
         this.isSearching = true;
-        
+
         const regionId = document.getElementById('region-select')?.value;
         if (!regionId) {
             this.isSearching = false;
             return uiService.showError('请选择区域');
         }
-        
+
         const start = document.getElementById('start-time')?.value;
         const end = document.getElementById('end-time')?.value;
-        
+
         uiService.showLoading('weather-table-container');
         try {
             const data = await apiService.getWeatherData({
@@ -1524,26 +1591,59 @@ const appController = {
             });
 
             console.log('/weather 查询响应:', data);
-            console.log('data.data:', data.data);
-            console.log('data.data 类型:', Array.isArray(data.data) ? '数组' : typeof data.data);
-            if (data.data) console.log('data.data.length:', data.data.length);
+
+            // 获取区域名称和坐标
+            const regionName = document.getElementById('region-select')?.selectedOptions[0]?.text || '';
+            const regionsData = await apiService.getRegions();
+            const region = regionsData.data.find(r => r.id == regionId);
+            let centerLng, centerLat;
+
+            if (region && region.longitude && region.latitude) {
+                centerLng = parseFloat(region.longitude);
+                centerLat = parseFloat(region.latitude);
+            } else {
+                const mapCenter = uiService.mapInstance?.getCenter();
+                if (mapCenter) {
+                    centerLng = mapCenter.getLng();
+                    centerLat = mapCenter.getLat();
+                } else {
+                    centerLng = 103.988471;
+                    centerLat = 30.581856;
+                }
+            }
 
             if (data.data && data.data.length) {
-
-                // 按时间戳升序排序
+                // 有数据
                 data.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                // 直接渲染表格
                 uiService.renderWeatherTable(data.data);
-                // 绘制温度趋势图
                 const temps = data.data.map(d => d.temperature).filter(t => t !== null && t !== undefined);
                 if (temps.length) {
                     uiService.drawTemperatureChart('temperature-chart', temps);
                 }
-                // 更新地图
                 await uiService.updateMapByRegionId(regionId);
+
+                // 显示最新一条数据信息窗
+                const latest = data.data[data.data.length - 1];
+                const content = `
+                    <div style="font-weight:bold;">${regionName} 实时气象</div>
+                    <div>时间：${new Date(latest.timestamp).toLocaleString()}</div>
+                    <div>温度：${latest.temperature ?? '-'} °C</div>
+                    <div>湿度：${latest.humidity ?? '-'} %</div>
+                    <div>风速：${latest.wind_speed ?? '-'} m/s</div>
+                    <div>降水：${latest.precipitation ?? '-'} mm</div>
+                `;
+                uiService.showInfoWindow(centerLng, centerLat, content);
             } else {
+                // 无数据，显示提示
+                const content = `
+                    <div style="font-weight:bold;">${regionName}</div>
+                    <div style="color:#999;">暂无气象数据</div>
+                    <div style="font-size:12px;color:#aaa;">请先添加气象记录</div>
+                `;
+                uiService.showInfoWindow(centerLng, centerLat, content);
                 uiService.renderWeatherTable([]);
                 uiService.drawTemperatureChart('temperature-chart', []);
+                await uiService.updateMapByRegionId(regionId);
             }
         } catch (err) {
             console.error('查询气象数据失败:', err);
@@ -1553,7 +1653,7 @@ const appController = {
             this.isSearching = false;
         }
     },
-    
+
     async loadDataTypeTrend() {
         const regionId = document.getElementById('region-select')?.value;
         if (!regionId) return uiService.showError('请先选择区域');
@@ -1573,8 +1673,6 @@ const appController = {
             });
 
             if (result.data && result.data.length) {
-
-                 // 按时间戳升序排序
                 result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 const mappedData = result.data.map(item => ({
@@ -1609,17 +1707,14 @@ const appController = {
             uiService.drawLineChart('data-type-chart', []);
         }
     },
-    
 
-    
-    
     async loadUsers() {
         try {
             const data = await apiService.getUsers();
             if (data.data) uiService.renderUsersList(data.data);
         } catch (err) { uiService.showError(err.message); }
     },
-    
+
     async loadRegions() {
         try {
             const data = await apiService.getRegions();
@@ -1628,11 +1723,11 @@ const appController = {
                 await uiService.renderRegionSelector('region-select');
                 await uiService.renderRegionSelector('add-region-id');
             }
-        } catch (err) { 
-            uiService.showError(err.message); 
+        } catch (err) {
+            uiService.showError(err.message);
         }
     },
-    
+
     async createRegion() {
         const name = document.getElementById('new-region-name')?.value.trim();
         if (!name) return uiService.showError('请输入区域名称');
@@ -1643,8 +1738,7 @@ const appController = {
             await this.loadRegions();
         } catch (err) { uiService.showError(err.message); }
     },
-    
-    // 加载栅格数据关联区域下拉框
+
     async loadRasterRegionSelect() {
         try {
             const data = await apiService.getRegions();
@@ -1666,73 +1760,54 @@ const appController = {
     }
 };
 
-// 仅在主页（包含 map-container 元素）时才执行主页初始化
+// 初始化
 if (document.getElementById('map-container')) {
     document.addEventListener('DOMContentLoaded', () => appController.init());
 }
-// 1. 本地预设坐标库（在这里新增城市）
+
+// 本地预设坐标库（仅保留所需城市）
 const extraAreaCoord = {
-    "重庆": { lng: 106.551614, lat: 29.563009 },
-    "贵州": { lng: 106.630189, lat: 26.651517 },
-    "贵阳": { lng: 106.630189, lat: 26.651517 },
-    "四川": { lng: 104.066801, lat: 30.572816 },
-    "成都": { lng: 104.066801, lat: 30.572816 },
-    "云南": { lng: 102.712251, lat: 25.040609 },
-    "昆明": { lng: 102.712251, lat: 25.040609 },
-    "渝中区": { lng: 106.575, lat: 29.562 }
+    "重庆": { lng: 106.5516, lat: 29.5630 },
+    "武汉": { lng: 114.3055, lat: 30.5928 },
+    "绵阳": { lng: 104.6791, lat: 31.4679 },
+    "成都": { lng: 104.0668, lat: 30.5728 },
+    "上海": { lng: 121.4737, lat: 31.2304 },
+    "南昌": { lng: 115.8579, lat: 28.6820 },
+    "北京": { lng: 116.4074, lat: 39.9042 }
 };
 
-// 省份列表，用来区分缩放等级
-const provinceNames = ["重庆", "贵州", "四川", "云南", "广西", "湖南"];
+// 省份列表，用来区分缩放等级（清空，统一使用城市缩放）
+const provinceNames = [];
 
-/**
- * 公共渲染点位函数 - 增加多层地图就绪校验，防止阻塞地图加载
- * @param {number} lng
- * @param {number} lat
- * @param {string} title
- */
 function setMapMarker(lng, lat, title) {
-    // 多层校验：地图服务、地图实例、高德API全部就绪才执行
     if (!uiService || !uiService.mapInstance || typeof AMap === 'undefined') {
         uiService.showError("地图尚未加载完成，请稍后重试");
         return;
     }
     const map = uiService.mapInstance;
-
-    // 清除旧标记
     if (uiService.currentMarker) {
         map.remove(uiService.currentMarker);
     }
-
-    // 移除外部图标，使用默认Marker，避免网络加载失败阻塞地图
     uiService.currentMarker = new AMap.Marker({
         position: [lng, lat],
         title: title,
         map: map
     });
-
-    // 判断缩放层级
-    const targetZoom = provinceNames.includes(title) ? 5 : 10;
-    map.setZoomAndCenter(targetZoom, [lng, lat]);
-    // 更新页面经纬度展示
+    // 统一缩放为 10（城市级别），不再区分省份
+    map.setZoomAndCenter(10, [lng, lat]);
     uiService.updatePositionDisplay(lng, lat);
 }
 
-// 劫持 区域名称搜索
+// 劫持 区域名称搜索（保持不变，但依赖 extraAreaCoord）
 const originSearchRegion = appController.searchRegionByName;
 appController.searchRegionByName = async function (...args) {
     const nameRaw = document.getElementById('search-region-name')?.value || '';
     const name = nameRaw.trim();
     if (!name) return uiService.showError('请输入区域名称');
-
-    // 执行原方法，透传所有参数
     await originSearchRegion.call(this, ...args);
-
     const resWrap = document.getElementById('region-detail-result');
     if (!resWrap) return;
     const resHtml = resWrap.innerHTML;
-
-    // 后端无结果 且 存在本地坐标
     if (resHtml.includes("未找到该区域") && extraAreaCoord[name]) {
         const area = extraAreaCoord[name];
         resWrap.innerHTML = `
@@ -1743,22 +1818,22 @@ appController.searchRegionByName = async function (...args) {
                 经度: ${area.lng}
             </div>
         `;
-        // 调用安全渲染方法
         setMapMarker(area.lng, area.lat, name);
     }
 };
 
-// 劫持 地图搜索框检索
+// 劫持 地图搜索框检索（保持不变）
 const originDoSearch = uiService.doSearchPlace;
 uiService.doSearchPlace = function (keyword) {
     const key = keyword.trim();
-    // 优先匹配本地坐标
     if (extraAreaCoord[key]) {
         const area = extraAreaCoord[key];
         setMapMarker(area.lng, area.lat, key);
         uiService.showSuccess(`已定位到：${key}【本地预设坐标】`);
+        if (this._mapClickCallback) {
+            this._mapClickCallback(area.lng, area.lat);
+        }
         return;
     }
-    // 本地无匹配，执行原高德搜索逻辑
     originDoSearch.call(this, keyword);
 };
