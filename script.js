@@ -57,11 +57,26 @@ const apiService = {
             throw new Error(`无法连接服务器 (${CONFIG.API_BASE_URL})，请检查后端服务是否启动`);
         }
 
+        // 先用 text 读取原始响应，再用 JSON 解析
+        let rawText;
+        try {
+            rawText = await response.text();
+        } catch (err) {
+            console.error('读取响应体失败，原始错误:', err.message);
+            throw new Error(
+                `后端在发送响应体之前断开了连接 (HTTP ${response.status})。\n` +
+                `这通常是因为后端 /weather 接口内部报错崩溃导致连接重置。\n` +
+                `请检查后端日志中 /weather 接口的异常信息。`
+            );
+        }
+
         let data;
         try {
-            data = await response.json();
+            data = JSON.parse(rawText);
         } catch (err) {
-            throw new Error(`服务器返回异常 (HTTP ${response.status})，请检查后端日志`);
+            const preview = rawText.length > 300 ? rawText.substring(0, 300) + '...' : rawText;
+            console.error('后端返回非 JSON 响应:', preview);
+            throw new Error(`服务器返回了非 JSON 数据 (HTTP ${response.status})，请检查后端日志。响应预览: ${preview}`);
         }
 
         if (response.status === 401) {
@@ -264,6 +279,35 @@ async uploadRaster(file, data_type, region_id, name = '', resolution = null) {
     const data = await response.json();
     if (!data.success) throw new Error(data.message || '上传失败');
     return data;
+},
+
+// ==================== 栅格数据接口 ====================
+// 查询栅格数据
+async getRasterData(region_id, data_type, resolution = null, bbox = null) {
+    const params = new URLSearchParams();
+    params.append('region_id', region_id);
+    params.append('data_type', data_type);
+    if (resolution) params.append('resolution', resolution);
+    if (bbox) params.append('bbox', bbox);
+    
+    const url = `/raster/data?${params.toString()}`;
+    return this.request(url, { method: 'GET' });
+},
+
+// ==================== 预警与空间分析接口 ====================
+// 获取当前区域预警
+async getCurrentAlert(region_id) {
+    return this.request(`/alerts/current?region_id=${region_id}`, { method: 'GET' });
+},
+
+// 计算干旱指数
+async getDroughtIndex(region_id) {
+    return this.request(`/indices/drought?region_id=${region_id}`, { method: 'GET' });
+},
+
+// 地形统计分析
+async getTerrainAnalysis(region_id) {
+    return this.request(`/analysis/terrain?region_id=${region_id}`, { method: 'GET' });
 }
     
 };
@@ -1239,6 +1283,170 @@ const appController = {
                 adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
+
+        // =============================================================
+        // ===== 新增：栅格数据查询 =====
+        // =============================================================
+        document.getElementById('query-raster-btn')?.addEventListener('click', async () => {
+            const regionId = document.getElementById('region-select')?.value;
+            if (!regionId) {
+                uiService.showToast('请先选择区域', 'error');
+                return;
+            }
+            const dataType = document.getElementById('raster-data-type-query')?.value;
+            const resolution = document.getElementById('raster-resolution-query')?.value;
+            
+            try {
+                const result = await apiService.getRasterData(
+                    parseInt(regionId), 
+                    dataType, 
+                    resolution ? parseInt(resolution) : null
+                );
+                
+                const display = document.getElementById('raster-data-display');
+                const container = document.getElementById('raster-result');
+                if (result.data) {
+                    const data = result.data;
+                    let info = `数据类型: ${data.data_type || dataType}\n`;
+                    info += `单位: ${data.units || '无'}\n`;
+                    if (data.min !== undefined) info += `最小值: ${data.min}\n`;
+                    if (data.max !== undefined) info += `最大值: ${data.max}\n`;
+                    if (data.bounds) info += `范围: [${data.bounds.join(', ')}]\n`;
+                    if (data.resolution_deg) info += `分辨率: ${data.resolution_deg}°\n`;
+                    if (data.is_simulated) info += `⚠️ 模拟数据（实际数据不存在）\n`;
+                    if (data.grid) {
+                        const gridPreview = data.grid.slice(0, 5).map(row => 
+                            row.slice(0, 5).map(v => v.toFixed(2)).join(', ') + (row.length > 5 ? '...' : '')
+                        );
+                        info += `\n网格预览 (前5×5):\n${gridPreview.join('\n')}`;
+                        info += `\n\n总网格: ${data.grid.length}×${data.grid[0]?.length || 0}`;
+                    }
+                    display.textContent = info;
+                    container.classList.remove('hidden');
+                    uiService.showToast('栅格数据查询成功', 'success');
+                }
+            } catch (err) {
+                uiService.showToast(err.message, 'error');
+            }
+        });
+
+        // =============================================================
+        // ===== 新增：查询当前预警 =====
+        // =============================================================
+        document.getElementById('query-alert-btn')?.addEventListener('click', async () => {
+            const regionId = document.getElementById('region-select')?.value;
+            if (!regionId) {
+                uiService.showToast('请先选择区域', 'error');
+                return;
+            }
+            try {
+                const result = await apiService.getCurrentAlert(parseInt(regionId));
+                const display = document.getElementById('alert-data-display');
+                const container = document.getElementById('alert-result');
+                if (result.data) {
+                    const data = result.data;
+                    let info = `📋 预警信息\n`;
+                    info += `━━━━━━━━━━━━━━━━━━━━\n`;
+                    info += `预警级别: ${data.alert_level || '无'}\n`;
+                    info += `预警类型: ${data.alert_type || '暂无'}\n`;
+                    info += `描述: ${data.description || '当前气象条件未触发任何预警'}\n`;
+                    if (data.triggered_value !== undefined) {
+                        info += `触发值: ${data.triggered_value}\n`;
+                    }
+                    if (data.latest_time) {
+                        info += `最新数据时间: ${new Date(data.latest_time).toLocaleString()}`;
+                    }
+                    display.textContent = info;
+                    container.classList.remove('hidden');
+                    
+                    // 根据预警级别显示不同颜色提示
+                    if (data.alert_level === '红色') {
+                        uiService.showToast('⚠️ 红色预警！请立即采取防范措施！', 'error');
+                    } else if (data.alert_level === '橙色') {
+                        uiService.showToast('⚠️ 橙色预警，请注意防范', 'error');
+                    } else if (data.alert_level === '黄色') {
+                        uiService.showToast('黄色预警，请关注天气变化', 'success');
+                    } else {
+                        uiService.showToast('当前无预警', 'success');
+                    }
+                }
+            } catch (err) {
+                uiService.showToast(err.message, 'error');
+            }
+        });
+
+        // =============================================================
+        // ===== 新增：查询干旱指数 =====
+        // =============================================================
+        document.getElementById('query-drought-btn')?.addEventListener('click', async () => {
+            const regionId = document.getElementById('region-select')?.value;
+            if (!regionId) {
+                uiService.showToast('请先选择区域', 'error');
+                return;
+            }
+            try {
+                const result = await apiService.getDroughtIndex(parseInt(regionId));
+                const display = document.getElementById('alert-data-display');
+                const container = document.getElementById('alert-result');
+                if (result.data) {
+                    const data = result.data;
+                    let info = `🌵 干旱指数分析\n`;
+                    info += `━━━━━━━━━━━━━━━━━━━━\n`;
+                    info += `连续无降水天数: ${data.consecutive_dry_days || 0} 天\n`;
+                    info += `干旱等级: ${data.drought_level || '无干旱'}\n`;
+                    info += `参考周期: ${data.reference_days || 30} 天\n`;
+                    if (data.latest_record_time) {
+                        info += `最新数据时间: ${new Date(data.latest_record_time).toLocaleString()}`;
+                    }
+                    display.textContent = info;
+                    container.classList.remove('hidden');
+                    
+                    if (data.drought_level === '重度干旱') {
+                        uiService.showToast('⚠️ 重度干旱，需采取紧急措施', 'error');
+                    } else if (data.drought_level === '中度干旱') {
+                        uiService.showToast('中度干旱，注意水资源管理', 'error');
+                    } else if (data.drought_level === '轻度干旱') {
+                        uiService.showToast('轻度干旱，建议关注天气变化', 'success');
+                    } else {
+                        uiService.showToast('当前无干旱', 'success');
+                    }
+                }
+            } catch (err) {
+                uiService.showToast(err.message, 'error');
+            }
+        });
+
+        // =============================================================
+        // ===== 新增：地形统计分析 =====
+        // =============================================================
+        document.getElementById('query-terrain-btn')?.addEventListener('click', async () => {
+            const regionId = document.getElementById('region-select')?.value;
+            if (!regionId) {
+                uiService.showToast('请先选择区域', 'error');
+                return;
+            }
+            try {
+                const result = await apiService.getTerrainAnalysis(parseInt(regionId));
+                const display = document.getElementById('alert-data-display');
+                const container = document.getElementById('alert-result');
+                if (result.data) {
+                    const data = result.data;
+                    let info = `⛰️ 地形统计分析\n`;
+                    info += `━━━━━━━━━━━━━━━━━━━━\n`;
+                    info += `平均高程: ${data.mean_elevation?.toFixed(2) || 'N/A'} ${data.unit || 'm'}\n`;
+                    info += `最低高程: ${data.min_elevation?.toFixed(2) || 'N/A'} ${data.unit || 'm'}\n`;
+                    info += `最高高程: ${data.max_elevation?.toFixed(2) || 'N/A'} ${data.unit || 'm'}\n`;
+                    if (data.mean_elevation && data.min_elevation && data.max_elevation) {
+                        info += `高程差: ${(data.max_elevation - data.min_elevation).toFixed(2)} ${data.unit || 'm'}`;
+                    }
+                    display.textContent = info;
+                    container.classList.remove('hidden');
+                    uiService.showToast('地形分析完成', 'success');
+                }
+            } catch (err) {
+                uiService.showToast(err.message, 'error');
+            }
+        });
     },
     
     async handleLogin() {
@@ -1309,12 +1517,17 @@ const appController = {
         
         uiService.showLoading('weather-table-container');
         try {
-            const data = await apiService.getWeatherData({ 
-                region_id: regionId, 
-                start_time: start, 
-                end_time: end 
+            const data = await apiService.getWeatherData({
+                region_id: regionId,
+                start_time: start,
+                end_time: end
             });
-            
+
+            console.log('/weather 查询响应:', data);
+            console.log('data.data:', data.data);
+            console.log('data.data 类型:', Array.isArray(data.data) ? '数组' : typeof data.data);
+            if (data.data) console.log('data.data.length:', data.data.length);
+
             if (data.data && data.data.length) {
 
                 // 按时间戳升序排序
@@ -1457,3 +1670,95 @@ const appController = {
 if (document.getElementById('map-container')) {
     document.addEventListener('DOMContentLoaded', () => appController.init());
 }
+// 1. 本地预设坐标库（在这里新增城市）
+const extraAreaCoord = {
+    "重庆": { lng: 106.551614, lat: 29.563009 },
+    "贵州": { lng: 106.630189, lat: 26.651517 },
+    "贵阳": { lng: 106.630189, lat: 26.651517 },
+    "四川": { lng: 104.066801, lat: 30.572816 },
+    "成都": { lng: 104.066801, lat: 30.572816 },
+    "云南": { lng: 102.712251, lat: 25.040609 },
+    "昆明": { lng: 102.712251, lat: 25.040609 },
+    "渝中区": { lng: 106.575, lat: 29.562 }
+};
+
+// 省份列表，用来区分缩放等级
+const provinceNames = ["重庆", "贵州", "四川", "云南", "广西", "湖南"];
+
+/**
+ * 公共渲染点位函数 - 增加多层地图就绪校验，防止阻塞地图加载
+ * @param {number} lng
+ * @param {number} lat
+ * @param {string} title
+ */
+function setMapMarker(lng, lat, title) {
+    // 多层校验：地图服务、地图实例、高德API全部就绪才执行
+    if (!uiService || !uiService.mapInstance || typeof AMap === 'undefined') {
+        uiService.showError("地图尚未加载完成，请稍后重试");
+        return;
+    }
+    const map = uiService.mapInstance;
+
+    // 清除旧标记
+    if (uiService.currentMarker) {
+        map.remove(uiService.currentMarker);
+    }
+
+    // 移除外部图标，使用默认Marker，避免网络加载失败阻塞地图
+    uiService.currentMarker = new AMap.Marker({
+        position: [lng, lat],
+        title: title,
+        map: map
+    });
+
+    // 判断缩放层级
+    const targetZoom = provinceNames.includes(title) ? 5 : 10;
+    map.setZoomAndCenter(targetZoom, [lng, lat]);
+    // 更新页面经纬度展示
+    uiService.updatePositionDisplay(lng, lat);
+}
+
+// 劫持 区域名称搜索
+const originSearchRegion = appController.searchRegionByName;
+appController.searchRegionByName = async function (...args) {
+    const nameRaw = document.getElementById('search-region-name')?.value || '';
+    const name = nameRaw.trim();
+    if (!name) return uiService.showError('请输入区域名称');
+
+    // 执行原方法，透传所有参数
+    await originSearchRegion.call(this, ...args);
+
+    const resWrap = document.getElementById('region-detail-result');
+    if (!resWrap) return;
+    const resHtml = resWrap.innerHTML;
+
+    // 后端无结果 且 存在本地坐标
+    if (resHtml.includes("未找到该区域") && extraAreaCoord[name]) {
+        const area = extraAreaCoord[name];
+        resWrap.innerHTML = `
+            <div class="bg-blue-50 p-3 rounded">
+                <span class="text-red-500">[本地兜底数据]</span><br>
+                名称: ${name}<br>
+                纬度: ${area.lat}<br>
+                经度: ${area.lng}
+            </div>
+        `;
+        // 调用安全渲染方法
+        setMapMarker(area.lng, area.lat, name);
+    }
+};
+
+// 劫持 地图搜索框检索
+const originDoSearch = uiService.doSearchPlace;
+uiService.doSearchPlace = function (keyword) {
+    const key = keyword.trim();
+    // 优先匹配本地坐标
+    if (extraAreaCoord[key]) {
+        const area = extraAreaCoord[key];
+        setMapMarker(area.lng, area.lat, key);
+        uiService.showSuccess(`已定位到：${key}【本地预设坐标】`);
+        return;
+    }
+    // 本地无匹配，执行原高德搜索逻辑
+    originDoSearch.call(this, keyword);
+};
