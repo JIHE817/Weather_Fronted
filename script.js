@@ -30,22 +30,40 @@ const apiService = {
      //核心功能：封装统一请求方法，所有前端调用后端接口都走这里，它会自动处理认证、错误、数据格式等细节
     async request(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
-        const headers = { 'Content-Type': 'application/json', ...options.headers };
-        if (options.requireAuth !== false) {// 判断是否需要登录权限，默认需要，如果 requireAuth 显式设置为 false 则不添加认证信息
+        const headers = { ...options.headers };
+
+        // 只有携带请求体时才设置 JSON Content-Type，避免无谓触发 CORS 预检
+        const hasBody = options.body && typeof options.body === 'object';
+        if (hasBody) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        if (options.requireAuth !== false) {
             const token = this.getToken();
             if (token) headers['Authorization'] = `Bearer ${token}`;
         }
 
-        // 合并请求配置，并自动将 body 对象转换为 JSON 字符串
-        const config = { ...options, headers };
-        if (config.body && typeof config.body === 'object') {
-            config.body = JSON.stringify(config.body);
+        // 构建 fetch 配置，剔除自定义字段 requireAuth
+        const { requireAuth, ...fetchOptions } = options;
+        const config = { ...fetchOptions, headers };
+        if (hasBody) {
+            config.body = JSON.stringify(options.body);
         }
-        const response = await fetch(url, config);
-        // 将后端返回的数据转成JSON格式 
-        const data = await response.json();
 
-         // 如果后端返回401（登录过期），清除登录状态并刷新页面让用户重新登录
+        let response;
+        try {
+            response = await fetch(url, config);
+        } catch (err) {
+            throw new Error(`无法连接服务器 (${CONFIG.API_BASE_URL})，请检查后端服务是否启动`);
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (err) {
+            throw new Error(`服务器返回异常 (HTTP ${response.status})，请检查后端日志`);
+        }
+
         if (response.status === 401) {
             this.clearAuth();
             window.location.reload();
@@ -61,12 +79,69 @@ const apiService = {
         return this.request('/auth/register', { method: 'POST', body: { username, email, password }, requireAuth: false });
     },
     async login(username, password) {
-        const data = await this.request('/auth/login', { method: 'POST', body: { username, password }, requireAuth: false });
+        // 清除旧数据，避免残留干扰
+        this.clearAuth();
+
+        const data = await this.request('/auth/login', {
+            method: 'POST',
+            body: { username, password },
+            requireAuth: false
+        });
+
+        console.log('/auth/login 响应:', data.data);
+
         if (data.data?.access_token) {
             this.setToken(data.data.access_token);
-            const userData = await this.getCurrentUser();
-            if (userData.data) {
-                this.setUser(userData.data);
+
+            // 优先从登录响应中提取用户信息
+            let userFromLogin = null;
+            if (data.data.user && typeof data.data.user === 'object') {
+                userFromLogin = data.data.user;
+                console.log('从登录响应 data.user 提取:', userFromLogin);
+            } else if (data.data.username) {
+                userFromLogin = {
+                    username: data.data.username,
+                    email: data.data.email || '',
+                    role: data.data.role || data.data.role_name || null
+                };
+                console.log('从登录响应 data 平铺字段提取:', userFromLogin);
+            }
+
+            // 再从 /auth/me 获取完整用户信息
+            let userFromMe = null;
+            try {
+                const userData = await this.getCurrentUser();
+                console.log('/auth/me 响应:', userData.data);
+                if (userData.data) {
+                    userFromMe = userData.data;
+                }
+            } catch (err) {
+                console.warn('/auth/me 请求失败:', err.message);
+            }
+
+            // 合并：/auth/me 优先，登录响应补充缺失字段
+            const mergedUser = { ...(userFromLogin || {}), ...(userFromMe || {}) };
+            console.log('合并后用户信息:', mergedUser);
+
+            // 如果两个来源都没有 role 字段，通过调用 /users 探测管理员身份
+            if (!mergedUser.role) {
+                console.log('未获取到 role，通过 /users 接口探测管理员身份...');
+                try {
+                    await this.request('/users');
+                    mergedUser.role = 'admin';
+                    console.log('/users 调用成功，判定为管理员');
+                } catch (err) {
+                    mergedUser.role = 'user';
+                    console.log('/users 调用失败，判定为普通用户');
+                }
+            }
+
+            if (mergedUser.username) {
+                this.setUser(mergedUser);
+            } else if (userFromLogin) {
+                this.setUser(userFromLogin);
+            } else {
+                throw new Error('登录成功但无法获取用户信息');
             }
         }
         return data;
@@ -222,16 +297,20 @@ const uiService = {
             authBtns.classList.add('hidden');
             userInfo.classList.remove('hidden');
             document.getElementById('user-name').textContent = user.username;
-            document.getElementById('user-role').textContent = user.role === 'admin' ? '管理员' : '普通用户';
+            const isAdmin = user.role && String(user.role).toLowerCase() === 'admin';
+            document.getElementById('user-role').textContent = isAdmin ? '管理员' : '普通用户';
             const adminPanel = document.getElementById('admin-panel');
+            const adminConsoleBtn = document.getElementById('admin-console-btn');
             if (adminPanel) {
-                if (user.role === 'admin') {
+                if (isAdmin) {
                     adminPanel.classList.remove('hidden');
+                    if (adminConsoleBtn) adminConsoleBtn.classList.remove('hidden');
                     appController.loadUsers();
                     appController.loadRegions();
-                    appController.loadRasterRegionSelect(); // 新增：加载栅格数据关联区域下拉框
+                    appController.loadRasterRegionSelect();
                 } else {
                     adminPanel.classList.add('hidden');
+                    if (adminConsoleBtn) adminConsoleBtn.classList.add('hidden');
                 }
             }
         } else if (authBtns && userInfo) {
@@ -239,6 +318,8 @@ const uiService = {
             userInfo.classList.add('hidden');
             const adminPanel = document.getElementById('admin-panel');
             if (adminPanel) adminPanel.classList.add('hidden');
+            const adminConsoleBtn = document.getElementById('admin-console-btn');
+            if (adminConsoleBtn) adminConsoleBtn.classList.add('hidden');
         }
     },
     async renderRegionSelector(selectId, selectedId = null) {
@@ -903,6 +984,7 @@ const uiService = {
     },
 
     clearAppData() {
+        this.stopClock();
         const weatherContainer = document.getElementById('weather-table-container');
         if (weatherContainer) weatherContainer.innerHTML = '<div class="text-center text-gray-400 py-8">请选择区域并点击查询</div>';
         const canvas = document.getElementById('temperature-chart');
@@ -920,6 +1002,103 @@ const uiService = {
         const addRegionSelect = document.getElementById('add-region-id');
         if (addRegionSelect) addRegionSelect.innerHTML = '<option value="">选择区域</option>';
         this.destroyMap();
+    },
+
+    // ==================== 实时时钟与迷你日历 ====================
+    _clockTimer: null,
+
+    startClock() {
+        const tick = () => {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const clockEl = document.getElementById('realtime-clock');
+            if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
+
+            const dateEl = document.getElementById('realtime-date');
+            if (dateEl) {
+                dateEl.textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+            }
+        };
+        tick();
+        this._clockTimer = setInterval(tick, 1000);
+    },
+
+    stopClock() {
+        if (this._clockTimer) {
+            clearInterval(this._clockTimer);
+            this._clockTimer = null;
+        }
+    },
+
+    initCalendar() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const today = now.getDate();
+
+        const titleEl = document.getElementById('cal-month-year');
+        if (titleEl) titleEl.textContent = `${year}年${month}月`;
+
+        const daysEl = document.getElementById('cal-days');
+        if (!daysEl) return;
+
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+        const startDow = firstDay.getDay();
+        const daysInMonth = lastDay.getDate();
+
+        let html = '';
+        for (let i = 0; i < startDow; i++) {
+            html += '<span class="text-gray-300">·</span>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            html += (d === today)
+                ? `<span class="rounded-full bg-blue-600 text-white font-bold leading-relaxed">${d}</span>`
+                : `<span class="text-gray-600">${d}</span>`;
+        }
+        daysEl.innerHTML = html;
+    },
+
+    // ==================== Toast 弹窗通知 ====================
+    showToast(message, type = 'success') {
+        const overlay = document.getElementById('toast-overlay');
+        const box = document.getElementById('toast-box');
+        const icon = document.getElementById('toast-icon');
+        const msg = document.getElementById('toast-message');
+        if (!overlay || !box || !icon || !msg) {
+            if (type === 'success') this.showSuccess(message);
+            else this.showError(message);
+            return;
+        }
+
+        msg.textContent = message;
+        if (type === 'success') {
+            icon.textContent = '✅';
+            icon.className = 'text-5xl mb-3';
+        } else {
+            icon.textContent = '❌';
+            icon.className = 'text-5xl mb-3';
+        }
+
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        setTimeout(() => box.classList.remove('scale-95'), 10);
+
+        const closeBtn = document.getElementById('toast-close');
+        const close = () => {
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }, 200);
+        };
+        closeBtn.onclick = close;
+
+        if (type === 'success') {
+            setTimeout(close, 3000);
+        }
     }
 };
 
@@ -946,6 +1125,8 @@ const appController = {
     
     async initMainApp() {
         uiService.initMap(103.988471, 30.581856, '成都');
+        uiService.startClock();
+        uiService.initCalendar();
         await uiService.renderRegionSelector('region-select');
         await uiService.renderRegionSelector('add-region-id');
         const select = document.getElementById('region-select');
@@ -1017,17 +1198,47 @@ const appController = {
             const resolution = document.getElementById('raster-resolution')?.value;
             try {
                 await apiService.uploadRaster(file, dataType, parseInt(regionId), name, resolution ? parseFloat(resolution) : null);
-                uiService.showSuccess('栅格数据上传成功');
+                uiService.showToast('栅格数据上传成功', 'success');
                 fileInput.value = '';
                 if (document.getElementById('raster-name')) document.getElementById('raster-name').value = '';
                 if (document.getElementById('raster-resolution')) document.getElementById('raster-resolution').value = '';
             } catch (err) {
-                uiService.showError(err.message);
+                uiService.showToast(err.message, 'error');
             }
         });
-        
+
         document.getElementById('welcome-login-btn')?.addEventListener('click', () => uiService.showModal('login-modal'));
         document.getElementById('welcome-register-btn')?.addEventListener('click', () => uiService.showModal('register-modal'));
+
+        // ===== 管理员标签页切换 =====
+        document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.admin-tab-btn').forEach(b => {
+                    b.classList.remove('active', 'text-blue-600', 'border-blue-600', 'bg-blue-50');
+                    b.classList.add('text-gray-600', 'border-transparent');
+                });
+                this.classList.add('active', 'text-blue-600', 'border-blue-600', 'bg-blue-50');
+                this.classList.remove('text-gray-600', 'border-transparent');
+
+                document.querySelectorAll('.admin-tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                const tabId = this.dataset.tab;
+                const targetContent = document.getElementById(`admin-tab-${tabId}`);
+                if (targetContent) {
+                    targetContent.classList.remove('hidden');
+                }
+            });
+        });
+
+        // ===== 右侧功能菜单：管理员控制台按钮（滚动到管理员面板） =====
+        document.getElementById('admin-console-btn')?.addEventListener('click', () => {
+            const adminPanel = document.getElementById('admin-panel');
+            if (adminPanel) {
+                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
     },
     
     async handleLogin() {
@@ -1246,60 +1457,3 @@ const appController = {
 if (document.getElementById('map-container')) {
     document.addEventListener('DOMContentLoaded', () => appController.init());
 }
-// 新增：重庆、贵州 坐标映射
-const extraAreaCoord = {
-    "重庆": { lng: 106.551614, lat: 29.563009 },
-    "贵州": { lng: 106.630189, lat: 26.651517 },
-    "贵阳": { lng: 106.630189, lat: 26.651517 }
-};
-
-// 增强【按名称查询区域】：本地兜底匹配重庆/贵州
-const originSearchRegion = appController.searchRegionByName;
-appController.searchRegionByName = async function () {
-    const name = document.getElementById('search-region-name')?.value.trim();
-    if (!name) return uiService.showError('请输入区域名称');
-
-    // 先走原有后端接口逻辑
-    await originSearchRegion.call(this);
-
-    // 后端无数据时，本地匹配重庆/贵州
-    const resHtml = document.getElementById('region-detail-result').innerHTML;
-    if (resHtml.includes("未找到该区域") && extraAreaCoord[name]) {
-        const area = extraAreaCoord[name];
-        document.getElementById('region-detail-result').innerHTML = `
-            <div class="bg-blue-50 p-3 rounded">名称: ${name}<br>纬度: ${area.lat}<br>经度: ${area.lng}</div>
-        `;
-        // 更新页面坐标显示 + 地图定位
-        uiService.updatePositionDisplay(area.lng, area.lat);
-        if(uiService.mapInstance){
-            uiService.mapInstance.setCenter([area.lng, area.lat]);
-            if (uiService.currentMarker) uiService.mapInstance.remove(uiService.currentMarker);
-            uiService.currentMarker = new AMap.Marker({
-                position: [area.lng, area.lat],
-                title: name,
-                map: uiService.mapInstance
-            });
-        }
-    }
-};
-
-// 增强【地图地点搜索】：本地优先匹配重庆/贵州
-const originDoSearch = uiService.doSearchPlace;
-uiService.doSearchPlace = function (keyword) {
-    const key = keyword.trim();
-    if (extraAreaCoord[key]) {
-        const area = extraAreaCoord[key];
-        this.mapInstance.setCenter([area.lng, area.lat]);
-        if (this.currentMarker) this.mapInstance.remove(this.currentMarker);
-        this.currentMarker = new AMap.Marker({
-            position: [area.lng, area.lat],
-            title: key,
-            map: this.mapInstance
-        });
-        this.updatePositionDisplay(area.lng, area.lat);
-        uiService.showSuccess(`已定位到：${key}`);
-        return;
-    }
-    // 本地无匹配，执行原有高德地理编码逻辑
-    originDoSearch.call(this, keyword);
-};
