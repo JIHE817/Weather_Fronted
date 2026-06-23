@@ -1765,20 +1765,40 @@ if (document.getElementById('map-container')) {
     document.addEventListener('DOMContentLoaded', () => appController.init());
 }
 
-// 本地预设坐标库（仅保留所需城市）
+// 本地预设坐标库（仅保留所需城市，含常见别名）
 const extraAreaCoord = {
+    // 重庆市
     "重庆": { lng: 106.5516, lat: 29.5630 },
+    "重庆市": { lng: 106.5516, lat: 29.5630 },
+    // 武汉市
     "武汉": { lng: 114.3055, lat: 30.5928 },
+    "武汉市": { lng: 114.3055, lat: 30.5928 },
+    // 绵阳市
     "绵阳": { lng: 104.6791, lat: 31.4679 },
+    "绵阳市": { lng: 104.6791, lat: 31.4679 },
+    // 成都市
     "成都": { lng: 104.0668, lat: 30.5728 },
+    "成都市": { lng: 104.0668, lat: 30.5728 },
+    // 上海市
     "上海": { lng: 121.4737, lat: 31.2304 },
+    "上海市": { lng: 121.4737, lat: 31.2304 },
+    // 南昌市
     "南昌": { lng: 115.8579, lat: 28.6820 },
-    "北京": { lng: 116.4074, lat: 39.9042 }
+    "南昌市": { lng: 115.8579, lat: 28.6820 },
+    // 北京市
+    "北京": { lng: 116.4074, lat: 39.9042 },
+    "北京市": { lng: 116.4074, lat: 39.9042 }
 };
 
-// 省份列表，用来区分缩放等级（清空，统一使用城市缩放）
+// 省份列表（清空，统一使用城市缩放级别）
 const provinceNames = [];
 
+/**
+ * 公共渲染点位函数 - 统一缩放为城市级别
+ * @param {number} lng
+ * @param {number} lat
+ * @param {string} title
+ */
 function setMapMarker(lng, lat, title) {
     if (!uiService || !uiService.mapInstance || typeof AMap === 'undefined') {
         uiService.showError("地图尚未加载完成，请稍后重试");
@@ -1793,12 +1813,12 @@ function setMapMarker(lng, lat, title) {
         title: title,
         map: map
     });
-    // 统一缩放为 10（城市级别），不再区分省份
+    // 统一缩放为 10（城市级别）
     map.setZoomAndCenter(10, [lng, lat]);
     uiService.updatePositionDisplay(lng, lat);
 }
 
-// 劫持 区域名称搜索（保持不变，但依赖 extraAreaCoord）
+// 劫持 区域名称搜索
 const originSearchRegion = appController.searchRegionByName;
 appController.searchRegionByName = async function (...args) {
     const nameRaw = document.getElementById('search-region-name')?.value || '';
@@ -1822,7 +1842,7 @@ appController.searchRegionByName = async function (...args) {
     }
 };
 
-// 劫持 地图搜索框检索（保持不变）
+// 劫持 地图搜索框检索
 const originDoSearch = uiService.doSearchPlace;
 uiService.doSearchPlace = function (keyword) {
     const key = keyword.trim();
