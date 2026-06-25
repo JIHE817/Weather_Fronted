@@ -148,11 +148,12 @@
 
                 try {
                     const result = await apiService.getWeatherData({
-                        region_id: regionId,
-                        start_time: start,
-                        end_time: end,
-                        data_type: dataType
-                    });
+    region_id: regionId,
+    start_time: start,
+    end_time: end,
+    data_type: dataType,
+    limit: 200
+});
 
                     if (result.data && result.data.length) {
                         result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));

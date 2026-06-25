@@ -150,21 +150,22 @@
 
                 document.getElementById('weather-table-container').innerHTML = '<div class="text-center py-8 text-gray-400">查询中...</div>';
                 try {
-                    const result = await apiService.getWeatherData({
-                        region_id: regionId,
-                        start_time: start,
-                        end_time: end
-                    });
+                   const result = await apiService.getWeatherData({
+    region_id: regionId,
+    start_time: start,
+    end_time: end,
+    limit: 200
+});
 
                     if (result.data && result.data.length) {
                         result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                         uiService.renderWeatherTable(result.data, 'weather-table-container');
-                        const temps = result.data.map(d => d.temperature).filter(t => t !== null && t !== undefined);
-                        if (temps.length) {
-                            uiService.drawTemperatureChart('temperature-chart', temps);
-                        } else {
-                            uiService.drawTemperatureChart('temperature-chart', []);
-                        }
+                        // const temps = result.data.map(d => d.temperature).filter(t => t !== null && t !== undefined);
+                        // if (temps.length) {
+                        //     uiService.drawTemperatureChart('temperature-chart', temps);
+                        // } else {
+                        //     uiService.drawTemperatureChart('temperature-chart', []);
+                        // }
                         uiService.showSuccess(`查询完成，共 ${result.data.length} 条记录`);
                     } else {
                         uiService.renderWeatherTable([], 'weather-table-container');

@@ -157,14 +157,14 @@ const apiService = {
         return this.request('/regions/create', { method: 'POST', body: { name } });
     },
     getWeatherData(params) {
-        const body = {};
-        if (params.region_id) body.region_id = params.region_id;
-        if (params.start_time) body.start_time = params.start_time;
-        if (params.end_time) body.end_time = params.end_time;
-        if (params.limit) body.limit = params.limit;
-        if (params.data_type) body.data_type = params.data_type;
-        return this.request('/weather', { method: 'POST', body });
-    },
+    const body = {};
+    if (params.region_id) body.region_id = params.region_id;
+    if (params.start_time) body.start_time = params.start_time;
+    if (params.end_time) body.end_time = params.end_time;
+    // 强制设置 limit，如果用户传入则使用用户值，否则默认 50
+    body.limit = params.limit || 50;
+    return this.request('/weather', { method: 'POST', body });
+},
     addWeatherData(data) {
         return this.request('/weather/addition', { method: 'POST', body: data });
     },
@@ -353,6 +353,17 @@ const uiService = {
     if (!container) return;
     if (!data || !data.length) {
         container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
+        // 清空图表
+        const chartCanvas = document.getElementById('temperature-chart');
+        if (chartCanvas) {
+            const ctx = chartCanvas.getContext('2d');
+            const width = chartCanvas.clientWidth, height = chartCanvas.clientHeight;
+            chartCanvas.width = width; chartCanvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#999';
+            ctx.font = '14px Arial';
+            ctx.fillText('暂无温度数据', width/2 - 50, height/2);
+        }
         return;
     }
 
@@ -373,7 +384,6 @@ const uiService = {
     `;
 
     data.forEach(item => {
-        // 修复时区：强制使用北京时间
         const timestamp = item.timestamp 
             ? new Date(item.timestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) 
             : '-';
@@ -402,166 +412,188 @@ const uiService = {
     `;
 
     container.innerHTML = html;
+
+    // 绘制温度图表（传入完整数据，包含时间戳）
+    this.drawTemperatureChart('temperature-chart', data);
 },
+
     drawTemperatureChart(canvasId, data) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas || !data || data.length === 0) {
-            console.warn('无温度数据或画布不存在');
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                const width = canvas.clientWidth, height = canvas.clientHeight;
-                canvas.width = width; canvas.height = height;
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = '#999';
-                ctx.font = '14px Arial';
-                ctx.fillText('暂无温度数据', width/2 - 50, height/2);
-            }
-            return;
-        }
-
-        const ctx = canvas.getContext('2d');
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.clearRect(0, 0, width, height);
-
-        const validData = data.filter(t => t !== null && t !== undefined);
-        if (validData.length === 0) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data || data.length === 0) {
+        console.warn('无温度数据或画布不存在');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.clientWidth, height = canvas.clientHeight;
+            canvas.width = width; canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
             ctx.fillStyle = '#999';
             ctx.font = '14px Arial';
-            ctx.fillText('无有效温度数据', width/2 - 50, height/2);
-            return;
+            ctx.fillText('暂无温度数据', width/2 - 50, height/2);
         }
+        return;
+    }
 
-        const maxTemp = Math.max(...validData);
-        const minTemp = Math.min(...validData);
-        const range = maxTemp - minTemp;
-        const actualRange = range === 0 ? 10 : range;
-        const padding = actualRange * 0.1;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
 
-        const yMin = minTemp - padding;
-        const yMax = maxTemp + padding;
-        const yRange = yMax - yMin;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0, 0, width, height);
 
-        const margin = { top: 40, right: 30, bottom: 40, left: 50 };
-        const chartWidth = width - margin.left - margin.right;
-        const chartHeight = height - margin.top - margin.bottom;
-        const stepX = chartWidth / (validData.length - 1);
+    // 提取温度值数组
+    const validData = data
+        .map(item => item.temperature !== undefined && item.temperature !== null ? item.temperature : null)
+        .filter(t => t !== null && t !== undefined);
+    
+    if (validData.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '14px Arial';
+        ctx.fillText('无有效温度数据', width/2 - 50, height/2);
+        return;
+    }
 
-        ctx.save();
+    const maxTemp = Math.max(...validData);
+    const minTemp = Math.min(...validData);
+    const range = maxTemp - minTemp;
+    const actualRange = range === 0 ? 10 : range;
+    const padding = actualRange * 0.1;
+
+    const yMin = minTemp - padding;
+    const yMax = maxTemp + padding;
+    const yRange = yMax - yMin;
+
+    const margin = { top: 40, right: 30, bottom: 55, left: 50 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    const stepX = chartWidth / (validData.length - 1);
+
+    ctx.save();
+
+    // Y轴网格和刻度
+    ctx.beginPath();
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.moveTo(margin.left, height - margin.bottom);
+    ctx.lineTo(width - margin.right, height - margin.bottom);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, height - margin.bottom);
+    ctx.stroke();
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    const yTickCount = 5;
+    for (let i = 0; i <= yTickCount; i++) {
+        const yValue = yMin + (i / yTickCount) * yRange;
+        const y = height - margin.bottom - (i / yTickCount) * chartHeight;
 
         ctx.beginPath();
-        ctx.strokeStyle = '#ccc';
-        ctx.lineWidth = 1;
-        ctx.moveTo(margin.left, height - margin.bottom);
-        ctx.lineTo(width - margin.right, height - margin.bottom);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.moveTo(margin.left - 5, y);
+        ctx.lineTo(margin.left, y);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(margin.left, margin.top);
-        ctx.lineTo(margin.left, height - margin.bottom);
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(width - margin.right, y);
         ctx.stroke();
 
         ctx.fillStyle = '#666';
-        ctx.font = '11px Arial';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
+        ctx.fillText(yValue.toFixed(1) + '°C', margin.left - 8, y);
+    }
 
-        const yTickCount = 5;
-        for (let i = 0; i <= yTickCount; i++) {
-            const yValue = yMin + (i / yTickCount) * yRange;
-            const y = height - margin.bottom - (i / yTickCount) * chartHeight;
+    // 横坐标标签 - 使用实际时间
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
 
-            ctx.beginPath();
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.moveTo(margin.left - 5, y);
-            ctx.lineTo(margin.left, y);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.strokeStyle = '#f0f0f0';
-            ctx.moveTo(margin.left, y);
-            ctx.lineTo(width - margin.right, y);
-            ctx.stroke();
-
-            ctx.fillStyle = '#666';
-            ctx.fillText(yValue.toFixed(1) + '°C', margin.left - 8, y);
+    const xLabelCount = Math.min(5, data.length);
+    for (let i = 0; i < xLabelCount; i++) {
+        const dataIndex = Math.floor((i / (xLabelCount - 1)) * (data.length - 1));
+        const x = margin.left + dataIndex * stepX;
+        let label = '';
+        if (data[dataIndex] && data[dataIndex].timestamp) {
+            const date = new Date(data[dataIndex].timestamp);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            label = `${month}/${day} ${hour}:00`;
+        } else {
+            label = `点${dataIndex + 1}`;
         }
+        ctx.fillText(label, x, height - margin.bottom + 5);
+    }
 
-        ctx.fillStyle = '#666';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
+    // 绘制温度曲线
+    ctx.beginPath();
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
 
-        const xLabelCount = Math.min(5, validData.length);
-        for (let i = 0; i < xLabelCount; i++) {
-            const dataIndex = Math.floor((i / (xLabelCount - 1)) * (validData.length - 1));
-            const x = margin.left + dataIndex * stepX;
-            ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
+    let firstPoint = true;
+    const points = [];
+
+    for (let i = 0; i < validData.length; i++) {
+        const x = margin.left + i * stepX;
+        const y = height - margin.bottom - ((validData[i] - yMin) / yRange) * chartHeight;
+        points.push({ x, y, temp: validData[i] });
+        if (firstPoint) {
+            ctx.moveTo(x, y);
+            firstPoint = false;
+        } else {
+            ctx.lineTo(x, y);
         }
+    }
+    ctx.stroke();
+
+    // 绘制数据点
+    for (let i = 0; i < points.length; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = '#3b82f6';
+        ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
+        ctx.fill();
 
         ctx.beginPath();
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2.5;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
+        ctx.fillStyle = '#fff';
+        ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
+        ctx.fill();
 
-        let firstPoint = true;
-        const points = [];
-
-        for (let i = 0; i < validData.length; i++) {
-            const x = margin.left + i * stepX;
-            const y = height - margin.bottom - ((validData[i] - yMin) / yRange) * chartHeight;
-            points.push({ x, y, temp: validData[i] });
-            if (firstPoint) {
-                ctx.moveTo(x, y);
-                firstPoint = false;
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-        ctx.stroke();
-
-        for (let i = 0; i < points.length; i++) {
-            ctx.beginPath();
-            ctx.fillStyle = '#3b82f6';
-            ctx.arc(points[i].x, points[i].y, 4, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.fillStyle = '#fff';
-            ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.fillStyle = '#1f2937';
-            ctx.font = 'bold 10px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(points[i].temp.toFixed(1) + '°C', points[i].x, points[i].y - 6);
-        }
-
-        ctx.fillStyle = '#374151';
-        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#1f2937';
+        ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('温度变化趋势图', width / 2, margin.top - 15);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(points[i].temp.toFixed(1) + '°C', points[i].x, points[i].y - 6);
+    }
 
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '11px Arial';
-        ctx.fillText('时间序列', width / 2, height - 10);
+    ctx.fillStyle = '#374151';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('温度变化趋势图', width / 2, margin.top - 15);
 
-        ctx.save();
-        ctx.translate(18, height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '11px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('温度 (°C)', 0, 0);
-        ctx.restore();
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px Arial';
+    ctx.fillText('时间序列', width / 2, height - 8);
 
-        ctx.restore();
-    },
+    ctx.save();
+    ctx.translate(18, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('温度 (°C)', 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+},
 
     drawLineChart(canvasId, data, label, unit) {
         const canvas = document.getElementById(canvasId);
@@ -645,16 +677,28 @@ const uiService = {
         }
 
         ctx.fillStyle = '#666';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
+ctx.font = '10px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
 
-        const xLabelCount = Math.min(5, values.length);
-        for (let i = 0; i < xLabelCount; i++) {
-            const dataIndex = Math.floor((i / (xLabelCount - 1)) * (values.length - 1));
-            const x = margin.left + dataIndex * stepX;
-            ctx.fillText(`点${dataIndex + 1}`, x, height - margin.bottom + 5);
-        }
+// 使用实际时间作为横坐标标签
+const xLabelCount = Math.min(5, data.length);
+for (let i = 0; i < xLabelCount; i++) {
+    const dataIndex = Math.floor((i / (xLabelCount - 1)) * (data.length - 1));
+    const x = margin.left + dataIndex * stepX;
+    // 从数据中提取时间
+    let label = '';
+    if (data[dataIndex] && data[dataIndex].timestamp) {
+        const date = new Date(data[dataIndex].timestamp);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hour = String(date.getHours()).padStart(2, '0');
+        label = `${month}/${day} ${hour}:00`;
+    } else {
+        label = `点${dataIndex + 1}`;
+    }
+    ctx.fillText(label, x, height - margin.bottom + 5);
+}
 
         ctx.beginPath();
         ctx.strokeStyle = '#f97316';
@@ -1578,10 +1622,11 @@ const appController = {
         uiService.showLoading('weather-table-container');
         try {
             const data = await apiService.getWeatherData({
-                region_id: regionId,
-                start_time: start,
-                end_time: end
-            });
+    region_id: regionId,
+    start_time: start,
+    end_time: end,
+    limit: 200
+});
 
             console.log('/weather 查询响应:', data);
 
@@ -1659,11 +1704,12 @@ const appController = {
 
         try {
             const result = await apiService.getWeatherData({
-                region_id: regionId,
-                start_time: start,
-                end_time: end,
-                data_type: dataType
-            });
+    region_id: regionId,
+    start_time: start,
+    end_time: end,
+    data_type: dataType,
+    limit: 200
+});
 
             if (result.data && result.data.length) {
                 result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
