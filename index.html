@@ -147,55 +147,42 @@
     </div>
 </header>
 
-        <!-- ===== 滚动播报栏 ===== -->
-    <div class="relative bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 border-b border-white/20 shadow-inner">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
-            <div class="flex items-center overflow-hidden">
-                <!-- 左侧喇叭图标 -->
-                <div class="flex-shrink-0 flex items-center mr-4 text-white/80">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                    </svg>
-                </div>
+        <!-- ===== 滚动播报栏（单行滚动） ===== -->
+<div class="relative bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 border-b border-white/20 shadow-inner overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
+        <div class="flex items-center">
+            <!-- 左侧喇叭图标 -->
+            <div class="flex-shrink-0 flex items-center mr-4 text-white/80 z-10">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+            </div>
 
-                <!-- 右侧滚动内容 -->
-                <div class="flex-1 overflow-hidden relative">
-                    <div class="whitespace-nowrap animate-scroll inline-block">
-                        <span class="text-white/90 text-sm font-medium mx-6">🌤️ 区域气象监测系统已接入全国2468个自动气象站数据</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">📊 2026年第二季度全国平均气温较常年同期偏高0.8°C</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🌧️ 华南地区进入汛期，未来一周仍有持续性强降水</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🔄 系统已更新最新区域气象数据，点击查询获取实时信息</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">📈 温度趋势图功能已升级，支持多维度数据可视化分析</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🌪️ 东北冷涡活动频繁，专家提示防范强对流天气</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🏔️ 青藏高原地区气温持续升高，冰川消融速度加快</span>
-                    </div>
-                    <!-- 副本用于无缝滚动 -->
-                    <div class="whitespace-nowrap animate-scroll inline-block">
-                        <span class="text-white/90 text-sm font-medium mx-6">🌤️ 区域气象监测系统已接入全国2468个自动气象站数据</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">📊 2026年第二季度全国平均气温较常年同期偏高0.8°C</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🌧️ 华南地区进入汛期，未来一周仍有持续性强降水</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🔄 系统已更新最新区域气象数据，点击查询获取实时信息</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">📈 温度趋势图功能已升级，支持多维度数据可视化分析</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🌪️ 东北冷涡活动频繁，专家提示防范强对流天气</span>
-                        <span class="text-white/70 text-sm mx-6">|</span>
-                        <span class="text-white/90 text-sm font-medium mx-6">🏔️ 青藏高原地区气温持续升高，冰川消融速度加快</span>
-                    </div>
+            <!-- 单行滚动内容 -->
+            <div class="flex-1 overflow-hidden relative">
+                <div class="whitespace-nowrap inline-block animate-scroll">
+                    <span class="text-white/90 text-sm font-medium mx-4">🌤️ 区域气象监测系统已接入全国2468个自动气象站</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">📊 Q2全国平均气温偏高0.8°C</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">🌧️ 华南汛期持续性强降水</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">🔄 区域气象数据已更新</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">📈 温度趋势图功能升级</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">🌪️ 东北冷涡防范强对流</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">🏔️ 青藏高原冰川消融加速</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">📡 风云卫星实时监测中</span>
+                    <span class="text-white/40 text-sm mx-2">|</span>
+                    <span class="text-white/90 text-sm font-medium mx-4">🌊 沿海地区需防范风暴潮</span>
                 </div>
             </div>
         </div>
     </div>
-
+</div>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="error-message" class="mb-4"></div>
         <div id="success-message" class="mb-4"></div>
