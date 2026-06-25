@@ -13,7 +13,7 @@
         canvas { max-width: 100%; height: auto; }
         #map-container {
             width: 100%;
-            height: 256px;
+            height: 420px;
             background-color: #e5e7eb;
             border-radius: 0.5rem;
         }
@@ -52,36 +52,149 @@
                 transform: translateY(0);
             }
         }
+
+        /* ===== 在这里添加滚动播报动画 ===== */
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-scroll {
+            animation: scroll 30s linear infinite;
+        }
+        .animate-scroll:hover {
+            animation-play-state: paused;
+        }
+
+
+                    /* ===== 轮播图样式 ===== */
+        #carousel-container {
+            position: relative;
+        }
+        .carousel-dot.active {
+            background-color: #ffffff !important;
+            width: 6px;
+            height: 6px;
+        }
+
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <!-- 顶部导航栏 -->
-    <nav class="bg-white shadow-md sticky top-0 z-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-2">
-                    <svg class="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- ===== 顶部导航栏 - 蓝天背景 ===== -->
+<header class="relative bg-gradient-to-b from-blue-600 via-blue-500 to-blue-400 shadow-lg  z-30">
+    <!-- 云朵装饰 -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <svg class="absolute text-white/10 w-64 h-24 -top-4 -left-8" viewBox="0 0 200 80" fill="currentColor">
+            <path d="M30,50 Q20,35 35,30 Q40,15 60,20 Q75,5 95,15 Q110,5 120,20 Q135,15 140,30 Q155,35 150,50 Q160,60 145,65 L45,65 Q30,60 30,50Z"/>
+        </svg>
+        <svg class="absolute text-white/10 w-96 h-36 top-2 right-10" viewBox="0 0 300 120" fill="currentColor">
+            <path d="M40,80 Q25,55 50,45 Q55,20 85,30 Q105,10 135,25 Q160,8 180,30 Q205,20 215,45 Q240,50 230,75 Q250,90 225,100 L65,100 Q40,95 40,80Z"/>
+        </svg>
+        <svg class="absolute text-white/10 w-80 h-32 bottom-0 left-1/3" viewBox="0 0 250 100" fill="currentColor">
+            <path d="M35,70 Q20,50 45,40 Q50,20 80,30 Q100,12 130,28 Q155,10 175,32 Q200,22 210,48 Q235,52 225,78 Q245,92 220,100 L60,100 Q35,90 35,70Z"/>
+        </svg>
+        <svg class="absolute text-white/5 w-48 h-20 top-4 right-1/4" viewBox="0 0 150 60" fill="currentColor">
+            <path d="M25,40 Q15,30 30,25 Q35,12 55,20 Q70,8 90,18 Q105,10 115,25 Q130,28 125,45 Q140,55 125,60 L40,60 Q25,55 25,40Z"/>
+        </svg>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-32">
+            <!-- Logo 区域 -->
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 backdrop-blur-sm rounded-full p-2.5">
+                    <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    <h1 class="text-xl font-bold text-gray-800">区域气象监测可视化系统</h1>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">区域气象监测可视化系统</h1>
+                    <p class="text-xs text-blue-100/80 font-light">Regional Weather Monitoring System</p>
+                </div>
+            </div>
+
+            <!-- 右侧用户区域 -->
+            <div class="flex items-center space-x-4">
+                <!-- 未登录按钮 -->
+                <div id="auth-buttons" class="flex space-x-2">
+                    <button id="show-login-modal" class="bg-white/20 hover:bg-white/30 text-white px-5 py-2 rounded-lg text-sm font-medium backdrop-blur-sm transition-all duration-200">
+                        登录
+                    </button>
+                    <button id="show-register-modal-btn" class="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-lg text-sm font-medium backdrop-blur-sm border border-white/20 transition-all duration-200">
+                        注册
+                    </button>
                 </div>
 
-                <div id="auth-buttons" class="flex space-x-3">
-                    <button id="show-login-modal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">登录</button>
-                    <button id="show-register-modal-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">注册</button>
+                <!-- 已登录用户信息 -->
+                <div id="user-info" class="hidden items-end space-x-2">
+                    <div class="bg-white/20 backdrop-blur-sm rounded-full px-5 py-2 flex items-center space-x-3">
+                        <span class="text-white/90 text-base md:text-lg flex items-center">
+                            <span>👋欢迎</span>
+                            <span class="ml-3"><span id="user-name" class="font-semibold"></span></span>
+                        </span>
+                        <span id="user-role" class="bg-white/30 text-white text-sm px-3 py-0.5 rounded-full"></span>
+                    </div>
+                    <button id="logout-btn" class="bg-white/10 hover:bg-white/20 text-white text-sm px-4 py-1.5 rounded-lg border border-white/20 transition-all duration-200 mt-4">
+                        退出
+                    </button>
                 </div>
-
-                <div id="user-info" class="hidden items-center space-x-3">
-                    <span class="text-gray-700">欢迎，<span id="user-name" class="font-semibold"></span></span>
-                    <span id="user-role" class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"></span>
-                    <button id="logout-btn" class="text-red-500 hover:text-red-700 text-sm border border-red-300 px-3 py-1 rounded-lg">退出</button>
-                </div>
-
             </div>
         </div>
-    </nav>
+
+        <!-- 底部装饰线 -->
+        <div class="h-0.5 bg-white/20"></div>
+    </div>
+</header>
+
+        <!-- ===== 滚动播报栏 ===== -->
+    <div class="relative bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 border-b border-white/20 shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
+            <div class="flex items-center overflow-hidden">
+                <!-- 左侧喇叭图标 -->
+                <div class="flex-shrink-0 flex items-center mr-4 text-white/80">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                </div>
+
+                <!-- 右侧滚动内容 -->
+                <div class="flex-1 overflow-hidden relative">
+                    <div class="whitespace-nowrap animate-scroll inline-block">
+                        <span class="text-white/90 text-sm font-medium mx-6">🌤️ 区域气象监测系统已接入全国2468个自动气象站数据</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">📊 2026年第二季度全国平均气温较常年同期偏高0.8°C</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🌧️ 华南地区进入汛期，未来一周仍有持续性强降水</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🔄 系统已更新最新区域气象数据，点击查询获取实时信息</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">📈 温度趋势图功能已升级，支持多维度数据可视化分析</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🌪️ 东北冷涡活动频繁，专家提示防范强对流天气</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🏔️ 青藏高原地区气温持续升高，冰川消融速度加快</span>
+                    </div>
+                    <!-- 副本用于无缝滚动 -->
+                    <div class="whitespace-nowrap animate-scroll inline-block">
+                        <span class="text-white/90 text-sm font-medium mx-6">🌤️ 区域气象监测系统已接入全国2468个自动气象站数据</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">📊 2026年第二季度全国平均气温较常年同期偏高0.8°C</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🌧️ 华南地区进入汛期，未来一周仍有持续性强降水</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🔄 系统已更新最新区域气象数据，点击查询获取实时信息</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">📈 温度趋势图功能已升级，支持多维度数据可视化分析</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🌪️ 东北冷涡活动频繁，专家提示防范强对流天气</span>
+                        <span class="text-white/70 text-sm mx-6">|</span>
+                        <span class="text-white/90 text-sm font-medium mx-6">🏔️ 青藏高原地区气温持续升高，冰川消融速度加快</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="error-message" class="mb-4"></div>
@@ -124,121 +237,103 @@
         <!-- 主应用界面（登录后显示） -->
         <div id="main-app-container" class="hidden flex flex-col lg:flex-row gap-6">
 
-            <!-- 左侧文章列表 -->
-            <div class="w-full lg:w-60 flex-shrink-0 order-1">
-                <div class="rounded-xl p-4 bg-white shadow-lg">
-                    <h3 class="text-lg font-bold text-gray-700 mb-4 text-center border-b border-gray-200 pb-2">📰 气象资讯</h3>
-                    <div id="article-list" class="flex flex-col gap-2">
-                        <div class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300">
-                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">全球气候变暖对区域降水模式的影响研究</h4>
-                            <p class="text-xs text-gray-500 mt-1">2024-06-15</p>
-                        </div>
-                        <div class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300">
-                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">台风季预警：沿海地区需加强防范措施</h4>
-                            <p class="text-xs text-gray-500 mt-1">2024-06-12</p>
-                        </div>
-                        <div class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300">
-                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">基于卫星遥感的植被覆盖变化监测技术进展</h4>
-                            <p class="text-xs text-gray-500 mt-1">2024-06-08</p>
-                        </div>
-                        <div class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300">
-                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">大数据与AI在气象预测中的融合应用</h4>
-                            <p class="text-xs text-gray-500 mt-1">2024-06-03</p>
-                        </div>
-                        <div class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300">
-                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">城市热岛效应：城市化进程中的温度变化分析</h4>
-                            <p class="text-xs text-gray-500 mt-1">2024-05-28</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+           <!-- 左侧文章列表 -->
+<div class="w-full lg:w-60 flex-shrink-0 order-1">
+    <div class="rounded-xl p-4 bg-white shadow-lg">
+        <h3 class="text-lg font-bold text-gray-700 mb-4 text-center border-b border-gray-200 pb-2">📰 气象资讯</h3>
+        <div id="article-list" class="flex flex-col gap-2">
+            <!-- 文章1 -->
+            <a href="article_detail.html?id=article-1" target="_blank" 
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">全球气候变暖对区域降水模式的影响研究</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-06-15</p>
+            </a>
+            <!-- 文章2 -->
+            <a href="article_detail.html?id=article-2" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">台风季预警：沿海地区需加强防范措施</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-06-12</p>
+            </a>
+            <!-- 文章3 -->
+            <a href="article_detail.html?id=article-3" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">基于卫星遥感的植被覆盖变化监测技术进展</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-06-08</p>
+            </a>
+            <!-- 文章4 -->
+            <a href="article_detail.html?id=article-4" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">大数据与AI在气象预测中的融合应用</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-06-03</p>
+            </a>
+            <!-- 文章5 -->
+            <a href="article_detail.html?id=article-5" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">城市热岛效应：城市化进程中的温度变化分析</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-05-28</p>
+            </a>
+            <!-- 文章6：新增 -->
+            <a href="article_detail.html?id=article-6" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">我国极端高温事件频发的气候背景分析</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-05-20</p>
+            </a>
+            <!-- 文章7：新增 -->
+            <a href="article_detail.html?id=article-7" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">气象卫星在防灾减灾中的应用</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-05-15</p>
+            </a>
+            <!-- 文章8：新增 -->
+            <a href="article_detail.html?id=article-8" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">暴雨洪涝灾害的防御与应对策略</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-05-08</p>
+            </a>
 
+                        <!-- 文章9：新增 -->
+            <a href="article_detail.html?id=article-9" target="_blank"
+               class="article-item bg-gray-50 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-smooth border border-transparent hover:border-blue-300 block no-underline">
+                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">中国气象大数据开放共享现状与展望</h4>
+                <p class="text-xs text-gray-500 mt-1">2024-05-02</p>
+            </a>
+
+        </div>
+    </div>
+</div>
             <div class="flex-1 space-y-8 order-2">
-            <!-- 气象数据检索 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                    气象数据检索
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">监测区域</label>
-                        <select id="region-select" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                            <option value="">请先登录</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">起始时间</label>
-                        <input type="date" id="start-time" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
-                        <input type="date" id="end-time" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    </div>
-                    <div>
-                        <button id="search-weather" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            查询
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- 监测区域地图 -->
+    <div class="bg-white rounded-xl shadow-md px-2 py-4">
+    <h2 class="text-lg font-semibold mb-2">监测区域地图</h2>
+    
+    <!-- 新增：区域选择下拉框 -->
+    <div class="mb-3 flex flex-wrap items-center gap-2">
+        <label class="text-sm font-medium text-gray-700">选择区域：</label>
+        <select id="region-select" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-1 min-w-[150px]">
+            <option value="">加载中...</option>
+        </select>
+        <button id="search-weather" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            查询
+        </button>
+    </div>
 
-            <!-- 数据类型趋势图 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-3">数据类型趋势图</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">数据类型</label>
-                        <select id="data-type-select" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                            <option value="temperature">温度 (°C)</option>
-                            <option value="humidity">湿度 (%)</option>
-                            <option value="wind_speed">风速 (m/s)</option>
-                            <option value="precipitation">降水 (mm)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button id="load-trend-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg">
-                            生成趋势图
-                        </button>
-                    </div>
-                </div>
-                <canvas id="data-type-chart" width="800" height="300" style="width:100%; height:auto; max-height:320px" class="border rounded-lg bg-gray-50"></canvas>
-            </div>
+    <div id="position-info" class="mb-2 text-sm text-gray-600 hidden">
+        <span>当前位置：</span>
+        <span id="current-lng">116.397428</span>°E,
+        <span id="current-lat">39.90923</span>°N
+        <button id="locate-me" class="ml-2 text-blue-600 hover:text-blue-800 underline text-xs">📍 定位我</button>
+    </div>
+    <div id="map-container"></div>
+    <div class="mt-2 flex gap-2">
+        <input type="text" id="search-position" placeholder="搜索地点（如：北京）" class="flex-1 border rounded-lg px-3 py-1 text-sm">
+        <button id="search-position-btn" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">搜索</button>
+        <button id="export-boundary-btn" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">导出区域边界</button>
+    </div>
+    <p class="text-xs text-gray-400 mt-1">* 点击地图查看坐标，支持地理编码搜索</p>
+</div>
 
-            <!-- 气象记录表格 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-3">气象记录列表</h2>
-                <div id="weather-table-container" class="overflow-x-auto">
-                    <div class="text-center text-gray-400 py-8">请选择区域并点击查询</div>
-                </div>
-            </div>
-
-            <!-- 温度趋势图 -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-3">温度变化趋势图</h2>
-                <canvas id="temperature-chart" width="800" height="300" style="width:100%; height:auto; max-height:320px" class="border rounded-lg bg-gray-50"></canvas>
-            </div>
-
-            <!-- 地图区域 -->
-            <div class="bg-white rounded-xl shadow-md p-4">
-                <h2 class="text-lg font-semibold mb-2">监测区域地图</h2>
-                <div id="position-info" class="mb-2 text-sm text-gray-600 hidden">
-                    <span>当前位置：</span> 
-                    <span id="current-lng">116.397428</span>°E, 
-                    <span id="current-lat">39.90923</span>°N
-                    <button id="locate-me" class="ml-2 text-blue-600 hover:text-blue-800 underline text-xs">📍 定位我</button>
-                </div>
-                <div id="map-container"></div>
-                <div class="mt-2 flex gap-2">
-                    <input type="text" id="search-position" placeholder="搜索地点（如：北京）" class="flex-1 border rounded-lg px-3 py-1 text-sm">
-                    <button id="search-position-btn" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">搜索</button>
-                    <button id="export-boundary-btn" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">导出区域边界</button>
-                </div>
-                <p class="text-xs text-gray-400 mt-1">* 点击地图查看坐标，支持地理编码搜索</p>
-            </div>
-             
-            <!-- ===== 新增：栅格数据与预警分析区域 ===== -->
+            <!-- ===== 栅格数据与预警分析区域 ===== -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
     <!-- 栅格数据查询 -->
@@ -253,15 +348,14 @@
                 <select id="raster-data-type-query" class="w-full border border-gray-300 rounded-lg px-3 py-2">
                     <option value="dem">DEM（数字高程模型）</option>
                     <option value="temperature_grid">温度栅格</option>
-                    <option value="precipitation_grid">降水栅格</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">分辨率（可选）</label>
                 <input type="number" id="raster-resolution-query" placeholder="如：80（80×80网格）" class="w-full border border-gray-300 rounded-lg px-3 py-2">
             </div>
-            <button id="query-raster-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg">
-                📊 查询栅格数据
+            <button id="query-raster-btn" class="w-full bg-blue-200 hover:bg-blue-300 text-blue-700 font-medium py-2 rounded-lg transition-colors duration-200">
+            📊 查询栅格数据
             </button>
             <div id="raster-result" class="mt-3 text-sm text-gray-600 hidden">
                 <div class="bg-gray-50 rounded-lg p-3 max-h-60 overflow-auto">
@@ -278,14 +372,14 @@
             预警与空间分析
         </h2>
         <div class="space-y-3">
-            <button id="query-alert-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg">
-                🚨 查询当前预警
+            <button id="query-alert-btn" class="w-full bg-blue-200 hover:bg-blue-300 text-blue-700 font-medium py-2 rounded-lg transition-colors duration-200">
+            🚨 查询当前预警
             </button>
-            <button id="query-drought-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 rounded-lg">
-                🌵 查询干旱指数
+            <button id="query-drought-btn" class="w-full bg-blue-200 hover:bg-blue-300 text-blue-700 font-medium py-2 rounded-lg transition-colors duration-200">
+            🌵 查询干旱指数
             </button>
-            <button id="query-terrain-btn" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 rounded-lg">
-                ⛰️ 地形统计分析
+            <button id="query-terrain-btn" class="w-full bg-blue-200 hover:bg-blue-300 text-blue-700 font-medium py-2 rounded-lg transition-colors duration-200">
+            ⛰️ 地形统计分析
             </button>
             <div id="alert-result" class="mt-3 text-sm text-gray-600 hidden">
                 <div class="bg-gray-50 rounded-lg p-3">
@@ -296,92 +390,7 @@
     </div>
 </div>
 
-            <!-- 管理员面板 -->
-            <div id="admin-panel" class="hidden mt-8 space-y-8">
-                <div class="border-t-2 border-blue-200 pt-6">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                        <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                        管理员控制台
-                    </h2>
-                </div>
 
-                <!-- ===== 功能标签页导航 ===== -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                    <div class="flex border-b border-gray-200">
-                        <button class="admin-tab-btn active flex-1 py-3 px-4 text-sm font-medium text-blue-600 border-b-2 border-blue-600 bg-blue-50 hover:bg-blue-100 transition" data-tab="users">
-                            👥 用户管理
-                        </button>
-                        <button class="admin-tab-btn flex-1 py-3 px-4 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:bg-gray-50 hover:text-gray-800 transition" data-tab="regions">
-                            🗺️ 区域列表
-                        </button>
-                        <button class="admin-tab-btn flex-1 py-3 px-4 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:bg-gray-50 hover:text-gray-800 transition" data-tab="raster">
-                            📤 上传栅格数据
-                        </button>
-                    </div>
-
-                    <!-- ===== 标签页内容 ===== -->
-
-                    <!-- 用户管理 -->
-                    <div id="admin-tab-users" class="admin-tab-content p-6">
-                        <h3 class="text-lg font-semibold mb-3">用户管理</h3>
-                        <div id="users-list-container">
-                            <button id="refresh-users-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新用户列表</button>
-                            <div id="users-list" class="overflow-x-auto">加载中...</div>
-                        </div>
-                    </div>
-
-                    <!-- 区域列表 -->
-                    <div id="admin-tab-regions" class="admin-tab-content p-6 hidden">
-                        <h3 class="text-lg font-semibold mb-3">区域列表</h3>
-                        <div id="regions-list-container">
-                            <button id="refresh-regions-btn" class="mb-3 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm hover:bg-indigo-200">刷新区域</button>
-                            <div id="regions-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">加载中...</div>
-                        </div>
-                        <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                            <h4 class="font-medium text-gray-700">新建区域（管理员）</h4>
-                            <div class="flex gap-2 mt-2">
-                                <input type="text" id="new-region-name" placeholder="区域名称（如 上海）" class="border rounded px-3 py-2 flex-1">
-                                <button id="create-region-btn" class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">创建</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 上传栅格数据 -->
-                    <div id="admin-tab-raster" class="admin-tab-content p-6 hidden">
-                        <h3 class="text-lg font-semibold mb-3">上传栅格数据</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">选择文件</label>
-                                <input type="file" id="raster-file" accept=".tif,.tiff,.nc,.grib" class="w-full border rounded-lg px-3 py-2 mt-1">
-                                <p class="text-xs text-gray-500 mt-1">支持格式：.tif, .tiff, .nc, .grib</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">数据类型</label>
-                                <select id="raster-data-type" class="w-full border rounded-lg px-3 py-2 mt-1">
-                                    <option value="dem">DEM（数字高程模型）</option>
-                                    <option value="temperature_grid">温度栅格</option>
-                                    <option value="precipitation_grid">降水栅格</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">关联区域</label>
-                                <select id="raster-region-id" class="w-full border rounded-lg px-3 py-2 mt-1">
-                                    <option value="">请选择区域</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">自定义名称（可选）</label>
-                                <input type="text" id="raster-name" placeholder="自动生成" class="w-full border rounded-lg px-3 py-2 mt-1">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">空间分辨率（可选）</label>
-                                <input type="number" step="0.1" id="raster-resolution" placeholder="单位：米或度" class="w-full border rounded-lg px-3 py-2 mt-1">
-                            </div>
-                            <button id="upload-raster-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg">上传栅格数据</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
             </div><!-- /flex-1 -->
 
                         <!-- 右侧功能菜单 -->
@@ -416,19 +425,187 @@
                     <!-- 功能菜单按钮 -->
                     <h3 class="text-lg font-bold text-gray-700 text-center">功能菜单</h3>
                     <div class="flex flex-row lg:flex-col gap-3 flex-wrap lg:flex-nowrap">
+                        <a href="weather_search.html" class="flex-1 lg:flex-initial text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
+                            🔍 气象数据检索
+                        </a>
+                        <a href="data_trend.html" class="flex-1 lg:flex-initial text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
+                            📈 数据趋势图
+                        </a>
                         <a href="add_weather.html" class="flex-1 lg:flex-initial text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
                             📊 添加气象数据
                         </a>
                         <a href="export_weather.html" class="flex-1 lg:flex-initial text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
                             📤 导出气象数据
                         </a>
-                        <button id="admin-console-btn" class="hidden flex-1 lg:flex-initial w-full text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
+                        <a href="admin.html" id="admin-console-btn" class="hidden flex-1 lg:flex-initial w-full text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg transition-smooth shadow-sm whitespace-nowrap">
                             ⚙️ 管理员控制台
-                        </button>
+                        </a>
                     </div>
                 </div>
+
+                <!-- ===== 轮播图（独立模块，与功能菜单分开） ===== -->
+                <div class="rounded-xl p-4 bg-white shadow-lg mt-8">
+                    <div class="flex items-center gap-2 mb-3 border-b border-gray-200 pb-2">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <h4 class="text-sm font-semibold text-gray-700">气象装备图览</h4>
+                    </div>
+                    <div class="relative overflow-hidden rounded-lg bg-gray-100" id="carousel-container">
+                        <!-- 轮播图片容器 -->
+                        <div class="flex transition-transform duration-500 ease-in-out" id="carousel-track">
+                            <!-- 图片1 -->
+                            <div class="w-full flex-shrink-0 relative">
+                                <img src="pea/天气雷达.png" alt="天气雷达" class="w-full h-40 object-cover">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                                    <p class="text-white text-[10px] font-medium text-center">天气雷达</p>
+                                </div>
+                            </div>
+                            <!-- 图片2 -->
+                            <div class="w-full flex-shrink-0 relative">
+                                <img src="pea/气象卫星.png" alt="气象卫星" class="w-full h-40 object-cover">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                                    <p class="text-white text-[10px] font-medium text-center">气象卫星</p>
+                                </div>
+                            </div>
+                            <!-- 图片3 -->
+                            <div class="w-full flex-shrink-0 relative">
+                                <img src="pea/自动气象站.png" alt="气象观测站" class="w-full h-40 object-cover">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                                    <p class="text-white text-[10px] font-medium text-center">自动气象站</p>
+                                </div>
+                            </div>
+                            <!-- 图片4 -->
+                            <div class="w-full flex-shrink-0 relative">
+                                <img src="pea/探空气球.png" alt="探空气球" class="w-full h-40 object-cover">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                                    <p class="text-white text-[10px] font-medium text-center">探空气球</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 左右切换按钮 -->
+                        <button id="carousel-prev" class="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm transition-all duration-200 z-10 text-xs">
+                            ‹
+                        </button>
+                        <button id="carousel-next" class="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm transition-all duration-200 z-10 text-xs">
+                            ›
+                        </button>
+
+                        <!-- 底部指示点 -->
+                        <div class="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                            <span class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/50 cursor-pointer transition-all duration-200" data-index="0"></span>
+                            <span class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/50 cursor-pointer transition-all duration-200" data-index="1"></span>
+                            <span class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/50 cursor-pointer transition-all duration-200" data-index="2"></span>
+                            <span class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/50 cursor-pointer transition-all duration-200" data-index="3"></span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 text-center mt-1.5">滑动查看气象监测装备</p>
+                </div>
+
             </div>
         </div>
+
+                    <!-- ===== 气象资料 ===== -->
+            <div class="mt-8 bg-white rounded-xl shadow-md p-6">
+                <div class="mb-5">
+                    <div class="flex items-center gap-3 mb-1">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <h2 class="text-2xl font-bold text-gray-800">气象资料</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 ml-9">依托气象大数据云平台统一数据环境和服务接口，提供完整、及时、稳定、准确的气象数据服务。</p>
+                </div>
+
+                <!-- 资料分类网格 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- 地面资料 -->
+                    <a href="weather_data/article_ground.html" class="group bg-gray-50 hover:bg-blue-50 rounded-xl p-4 border border-gray-100 hover:border-blue-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-blue-700">🌍 地面资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">中国地面基本气象观测数据</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共25类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">全球地面基本气象观测数据 · 中国地面气候标准值数据集（气温/降水）</p>
+                        <div class="mt-2 text-xs text-blue-600 group-hover:text-blue-800 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 高空资料 -->
+                    <a href="weather_data/article_upper.html" class="group bg-gray-50 hover:bg-green-50 rounded-xl p-4 border border-gray-100 hover:border-green-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-green-700">🎈 高空资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">中国高空气象观测数据</p>
+                            </div>
+                            <span class="bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共9类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">中国高空气候标准值月/年值数据集 · 全球高空基本气象观测数据</p>
+                        <div class="mt-2 text-xs text-green-600 group-hover:text-green-800 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 卫星资料 -->
+                    <a href="weather_data/article_satellite.html" class="group bg-gray-50 hover:bg-purple-50 rounded-xl p-4 border border-gray-100 hover:border-purple-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-purple-700">🛰️ 卫星资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">风云卫星及国际卫星数据</p>
+                            </div>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共983类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">METEOSAT圆盘图/定量产品 · 快速成像仪250M/500M L1数据</p>
+                        <div class="mt-2 text-xs text-purple-600 group-hover:text-purple-800 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 雷达资料 -->
+                    <a href="weather_data/article_radar.html" class="group bg-gray-50 hover:bg-orange-50 rounded-xl p-4 border border-gray-100 hover:border-orange-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-orange-700">📡 雷达资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">天气雷达组网观测数据</p>
+                            </div>
+                            <span class="bg-orange-100 text-orange-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共9类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">液态垂直累积含水 · 组合反射率 · 回波顶高 · 24h降水估测</p>
+                        <div class="mt-2 text-xs text-orange-600 group-hover:text-orange-800 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 数值预报 -->
+                    <a href="weather_data/article_nwp.html" class="group bg-gray-50 hover:bg-rose-50 rounded-xl p-4 border border-gray-100 hover:border-rose-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-rose-700">💻 数值预报</h3>
+                                <p class="text-xs text-gray-500 mt-1">CMA-GFS/MESO模式产品</p>
+                            </div>
+                            <span class="bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共6类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">CMA全球/区域模式 · 北半球/亚欧/东亚预报产品</p>
+                        <div class="mt-2 text-xs text-rose-600 group-hover:text-rose-800 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 服务产品 -->
+                    <a href="weather_data/article_service.html" class="group bg-gray-50 hover:bg-teal-50 rounded-xl p-4 border border-gray-100 hover:border-teal-300 transition-all duration-200 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800 group-hover:text-teal-700">📋 服务产品</h3>
+                                <p class="text-xs text-gray-500 mt-1">台风实况与预报产品</p>
+                            </div>
+                            <span class="bg-teal-100 text-teal-700 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">共19类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">全球台风实况 · 西北太平洋路径 · 热带气旋天气公报</p>
+                        <div class="mt-2 text-xs text-teal-600 group-hover:text-teal-800 font-medium">查看详情 →</div>
+                    </a>
+                </div>
+
+                <!-- 底部数据来源 -->
+                <div class="mt-5 pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <p class="text-xs text-gray-400">📌 数据来源于国家气象信息中心 · 中国气象数据网</p>
+                    <span class="text-xs text-gray-400">数据持续更新中</span>
+                </div>
+            </div>
+
     </main>
 
     <!-- 登录模态框 -->
@@ -484,6 +661,82 @@
         </div>
     </div>
 
+            <script>
+        // ===== 轮播图逻辑 =====
+        (function() {
+            const track = document.getElementById('carousel-track');
+            const dots = document.querySelectorAll('.carousel-dot');
+            const prevBtn = document.getElementById('carousel-prev');
+            const nextBtn = document.getElementById('carousel-next');
+            let currentIndex = 0;
+            const totalSlides = 4;
+            let autoPlayTimer = null;
+
+            function goToSlide(index) {
+                if (index < 0) index = totalSlides - 1;
+                if (index >= totalSlides) index = 0;
+                currentIndex = index;
+                track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+                dots.forEach(function(dot, i) {
+                    if (i === currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+
+            function nextSlide() {
+                goToSlide(currentIndex + 1);
+            }
+
+            function prevSlide() {
+                goToSlide(currentIndex - 1);
+            }
+
+            function startAutoPlay() {
+                if (autoPlayTimer) clearInterval(autoPlayTimer);
+                autoPlayTimer = setInterval(nextSlide, 4000);
+            }
+
+            function stopAutoPlay() {
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+            }
+
+            prevBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                stopAutoPlay();
+                prevSlide();
+                startAutoPlay();
+            });
+
+            nextBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                stopAutoPlay();
+                nextSlide();
+                startAutoPlay();
+            });
+
+            dots.forEach(function(dot) {
+                dot.addEventListener('click', function() {
+                    var index = parseInt(this.dataset.index);
+                    stopAutoPlay();
+                    goToSlide(index);
+                    startAutoPlay();
+                });
+            });
+
+            var container = document.getElementById('carousel-container');
+            container.addEventListener('mouseenter', stopAutoPlay);
+            container.addEventListener('mouseleave', startAutoPlay);
+
+            goToSlide(0);
+            startAutoPlay();
+        })();
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

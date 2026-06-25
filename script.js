@@ -1,5 +1,5 @@
 const CONFIG = {
-    API_BASE_URL: 'http://10.18.234.49:5000/api/v1',
+    API_BASE_URL: 'http://10.27.17.248:5000/api/v1',
     TOKEN_KEY: 'access_token',
     USER_KEY: 'user_info'
 };
@@ -312,25 +312,17 @@ const uiService = {
             document.getElementById('user-name').textContent = user.username;
             const isAdmin = user.role && String(user.role).toLowerCase() === 'admin';
             document.getElementById('user-role').textContent = isAdmin ? '管理员' : '普通用户';
-            const adminPanel = document.getElementById('admin-panel');
             const adminConsoleBtn = document.getElementById('admin-console-btn');
-            if (adminPanel) {
+            if (adminConsoleBtn) {
                 if (isAdmin) {
-                    adminPanel.classList.remove('hidden');
-                    if (adminConsoleBtn) adminConsoleBtn.classList.remove('hidden');
-                    appController.loadUsers();
-                    appController.loadRegions();
-                    appController.loadRasterRegionSelect();
+                    adminConsoleBtn.classList.remove('hidden');
                 } else {
-                    adminPanel.classList.add('hidden');
-                    if (adminConsoleBtn) adminConsoleBtn.classList.add('hidden');
+                    adminConsoleBtn.classList.add('hidden');
                 }
             }
         } else if (authBtns && userInfo) {
             authBtns.classList.remove('hidden');
             userInfo.classList.add('hidden');
-            const adminPanel = document.getElementById('admin-panel');
-            if (adminPanel) adminPanel.classList.add('hidden');
             const adminConsoleBtn = document.getElementById('admin-console-btn');
             if (adminConsoleBtn) adminConsoleBtn.classList.add('hidden');
         }
@@ -357,57 +349,60 @@ const uiService = {
         } catch (err) { console.error(err); }
     },
     renderWeatherTable(data, containerId = 'weather-table-container') {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        if (!data || !data.length) {
-            container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
-            return;
-        }
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!data || !data.length) {
+        container.innerHTML = '<div class="text-center text-gray-500 p-8">暂无气象数据</div>';
+        return;
+    }
 
-        let html = `
-            <div class="overflow-x-auto shadow-md rounded-lg">
-                <table class="min-w-full bg-white border border-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">时间</th>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">温度(°C)</th>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">湿度(%)</th>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风速(m/s)</th>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风向</th>
-                            <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">降水(mm)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+    let html = `
+        <div class="overflow-x-auto shadow-md rounded-lg">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">时间</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">温度(°C)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">湿度(%)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风速(m/s)</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">风向</th>
+                        <th class="px-4 py-3 border-b border-gray-200 text-left text-sm font-semibold text-gray-700">降水(mm)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
-        data.forEach(item => {
-            const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
-            const temperature = item.temperature !== undefined && item.temperature !== null ? item.temperature : '-';
-            const humidity = item.humidity !== undefined && item.humidity !== null ? item.humidity : '-';
-            const windSpeed = item.wind_speed !== undefined && item.wind_speed !== null ? item.wind_speed : '-';
-            const windDirection = item.wind_direction || '-';
-            const precipitation = item.precipitation !== undefined && item.precipitation !== null ? item.precipitation : '-';
-
-            html += `
-                <tr class="hover:bg-gray-50 border-b border-gray-200">
-                    <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${timestamp}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">${temperature}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">${humidity}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">${windSpeed}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">${windDirection}</td>
-                    <td class="px-4 py-2 text-sm text-gray-700">${precipitation}</td>
-                </tr>
-            `;
-        });
+    data.forEach(item => {
+        // 修复时区：强制使用北京时间
+        const timestamp = item.timestamp 
+            ? new Date(item.timestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) 
+            : '-';
+        const temperature = item.temperature !== undefined && item.temperature !== null ? item.temperature : '-';
+        const humidity = item.humidity !== undefined && item.humidity !== null ? item.humidity : '-';
+        const windSpeed = item.wind_speed !== undefined && item.wind_speed !== null ? item.wind_speed : '-';
+        const windDirection = item.wind_direction || '-';
+        const precipitation = item.precipitation !== undefined && item.precipitation !== null ? item.precipitation : '-';
 
         html += `
+            <tr class="hover:bg-gray-50 border-b border-gray-200">
+                <td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${timestamp}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${temperature}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${humidity}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${windSpeed}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${windDirection}</td>
+                <td class="px-4 py-2 text-sm text-gray-700">${precipitation}</td>
+            </tr>
+        `;
+    });
+
+    html += `
                     </tbody>
                 </table>
             </div>
-        `;
+    `;
 
-        container.innerHTML = html;
-    },
+    container.innerHTML = html;
+},
     drawTemperatureChart(canvasId, data) {
         const canvas = document.getElementById(canvasId);
         if (!canvas || !data || data.length === 0) {
@@ -771,26 +766,17 @@ const uiService = {
         });
     },
     renderRegionsList(regions) {
-        const container = document.getElementById('regions-list');
-        if (!container) return;
-        if (!regions?.length) { container.innerHTML = '<div class="text-gray-500">暂无区域数据</div>'; return; }
-        let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
-        regions.forEach(region => {
-            html += `<div class="bg-gray-50 p-3 rounded shadow-sm flex justify-between items-center">
-                        <div><span class="font-medium">${region.name}</span> <span class="text-xs text-gray-500">${region.code || ''}</span></div>
-                        <button class="view-region-weather text-blue-600 text-sm" data-id="${region.id}">查看天气</button>
-                    </div>`;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-        document.querySelectorAll('.view-region-weather').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const regionId = btn.dataset.id;
-                const regionSelect = document.getElementById('region-select');
-                if (regionSelect) regionSelect.value = regionId;
-                appController.searchWeather();
-            });
-        });
+    const container = document.getElementById('regions-list');
+    if (!container) return;
+    if (!regions?.length) { container.innerHTML = '<div class="text-gray-500">暂无区域数据</div>'; return; }
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
+    regions.forEach(region => {
+        html += `<div class="bg-gray-50 p-3 rounded shadow-sm">
+                    <div><span class="font-medium">${region.name}</span> <span class="text-xs text-gray-500">${region.code || ''}</span></div>
+                </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
     },
     showModal(id) {
         const modal = document.getElementById(id);
@@ -1164,10 +1150,8 @@ const appController = {
         uiService.startClock();
         uiService.initCalendar();
         await uiService.renderRegionSelector('region-select');
-        await uiService.renderRegionSelector('add-region-id');
         const select = document.getElementById('region-select');
         if (select && select.value) {
-            await this.searchWeather();
             await uiService.updateMapByRegionId(select.value);
         }
     },
@@ -1269,13 +1253,6 @@ const appController = {
                     targetContent.classList.remove('hidden');
                 }
             });
-        });
-
-        document.getElementById('admin-console-btn')?.addEventListener('click', () => {
-            const adminPanel = document.getElementById('admin-panel');
-            if (adminPanel) {
-                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
         });
 
         // ===== 栅格查询 =====
@@ -1485,6 +1462,12 @@ const appController = {
             });
         }
 
+        if (!uiService.geocoder) {
+            uiService.showToast('地图服务加载中，请稍后重试', 'error');
+            resolve();
+            return;
+        }
+
         return new Promise((resolve) => {
             uiService.geocoder.getAddress(new AMap.LngLat(lng, lat), async (status, result) => {
                 if (status === 'complete' && result.info === 'OK') {
@@ -1492,7 +1475,7 @@ const appController = {
                     const comp = result.regeocode.addressComponent;
                     let locationName = comp.city || comp.district || comp.province;
                     if (!locationName) {
-                        uiService.showToast('无法识别该位置所属区域', 'error');
+                        // uiService.showToast('无法识别该位置所属区域', 'error');
                         resolve();
                         return;
                     }
@@ -1519,7 +1502,7 @@ const appController = {
                         uiService.showError('获取区域列表失败：' + err.message);
                     }
                 } else {
-                    uiService.showError('逆地理编码失败，无法识别位置');
+                    console.warn('逆地理编码失败，无法识别位置');
                 }
                 resolve();
             });
@@ -1636,7 +1619,7 @@ const appController = {
                 const latest = data.data[data.data.length - 1];
                 const content = `
                     <div style="font-weight:bold;">${regionName} 实时气象</div>
-                    <div>时间：${new Date(latest.timestamp).toLocaleString()}</div>
+                    <div>时间：${new Date(latest.timestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</div>
                     <div>温度：${latest.temperature ?? '-'} °C</div>
                     <div>湿度：${latest.humidity ?? '-'} %</div>
                     <div>风速：${latest.wind_speed ?? '-'} m/s</div>

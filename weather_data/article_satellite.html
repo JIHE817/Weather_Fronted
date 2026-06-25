@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卫星资料 - 气象资料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .article-content { font-size: 16px; line-height: 1.9; color: #1f2937; }
+        .article-content h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px 0; color: #111827; }
+        .article-content h3 { font-size: 17px; font-weight: 600; margin: 20px 0 10px 0; color: #1f2937; }
+        .article-content p { margin-bottom: 16px; text-indent: 2em; }
+        .article-content ul, .article-content ol { margin: 10px 0 16px 2em; }
+        .article-content li { margin-bottom: 6px; }
+        .article-content blockquote { border-left: 4px solid #a855f7; margin: 16px 0; color: #4b5563; background: #f5f3ff; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 500; transition: color 0.2s; }
+        .back-link:hover { color: #1d4ed8; }
+        .category-badge { background: linear-gradient(135deg, #a855f7, #c084fc); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <div class="mb-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="category-badge text-white text-xs font-bold px-3 py-1 rounded-full">卫星资料</span>
+                <span class="text-sm text-gray-500">更新于 2026-06</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">🛰️ 风云卫星及国际卫星数据</h1>
+            <p class="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">共 983 类数据产品 · 覆盖全球卫星遥感观测</p>
+            <div class="article-content">
+                <h2>一、数据概述</h2>
+                <p>卫星遥感是当代气象观测体系中最具革命性的技术手段之一。中国风云系列气象卫星与国际先进卫星系统（如METEOSAT、GOES、GCOM等）共同构成了覆盖全球的卫星气象观测网络，为天气预报、气候监测、自然灾害预警和生态环境评估提供了不可替代的观测数据。</p>
+                <p>风云卫星系列包括极轨卫星（风云三号）和静止卫星（风云二号、风云四号），实现了对地球大气、海洋和陆地的多角度、多光谱、高频次观测。风云四号静止卫星搭载了先进的闪电成像仪和干涉式大气垂直探测仪，标志着我国静止气象卫星技术达到国际先进水平。</p>
+
+                <h2>二、主要数据产品（983类）</h2>
+                <p>卫星资料涵盖983类产品，按数据来源分为以下四大类别：</p>
+
+                <h3>（一）风云卫星数据（500+类）</h3>
+                <ul>
+                    <li><strong>FY-4A/B多通道扫描辐射计数据：</strong>风云四号静止卫星14通道辐射计数据，5-15分钟高频次区域云图</li>
+                    <li><strong>FY-4A/B闪电成像仪数据：</strong>中国区域闪电实时监测数据，空间分辨率7.8km</li>
+                    <li><strong>FY-4A/B干涉式大气垂直探测仪数据：</strong>大气温度和湿度垂直廓线反演产品</li>
+                    <li><strong>FY-3系列极轨卫星数据：</strong>全球多光谱成像、大气探测、海洋水色、微波辐射计数据</li>
+                    <li><strong>风云卫星云图产品：</strong>可见光云图、红外云图、水汽云图（多种投影方式）</li>
+                    <li><strong>风云卫星定量产品：</strong>云顶温度、云相态、大气运动矢量、降水估算、海面温度</li>
+                    <li><strong>风云卫星大气成分产品：</strong>气溶胶光学厚度、臭氧总量、二氧化硫、氮氧化物</li>
+                </ul>
+
+                <h3>（二）国际静止卫星数据（200+类）</h3>
+                <ul>
+                    <li><strong>METEOSAT-11圆盘图数据：</strong>欧洲气象卫星组织第二代静止卫星全圆盘可见光/红外云图</li>
+                    <li><strong>METEOSAT-11卫星定量产品：</strong>云顶温度、云相态、大气运动矢量、降水估算</li>
+                    <li><strong>GOES系列卫星数据：</strong>美国GOES-16/17/18静止卫星多通道云图和定量产品</li>
+                    <li><strong>Himawari系列卫星数据：</strong>日本向日葵8/9号静止卫星高分辨率云图</li>
+                    <li><strong>GK-2A卫星数据：</strong>韩国静止气象卫星数据</li>
+                </ul>
+
+                <h3>（三）快速成像仪数据（100+类）</h3>
+                <ul>
+                    <li><strong>快速成像仪区域250M L1数据：</strong>高空间分辨率（250米）快速成像仪一级数据</li>
+                    <li><strong>快速成像仪区域500M L1数据：</strong>500米分辨率快速成像仪数据</li>
+                    <li><strong>快速成像仪全球1KM L1数据：</strong>全球覆盖的1公里分辨率快速成像数据</li>
+                    <li><strong>快速成像仪陆地监测产品：</strong>植被指数、地表温度、水体识别等增值产品</li>
+                </ul>
+
+                <h3>（四）全球卫星融合产品（183类）</h3>
+                <ul>
+                    <li><strong>全球海面温度卫星融合产品：</strong>多源卫星数据融合的海面温度格点产品（逐日/逐月）</li>
+                    <li><strong>全球降水卫星融合产品：</strong>多源卫星降水估算融合格点产品</li>
+                    <li><strong>全球海面高度卫星产品：</strong>卫星测高海面高度异常数据</li>
+                    <li><strong>全球海洋水色卫星产品：</strong>叶绿素浓度、悬浮物浓度、透明度等</li>
+                    <li><strong>全球陆表卫星产品：</strong>地表反射率、归一化植被指数、雪盖、土壤湿度</li>
+                    <li><strong>全球云量卫星产品：</strong>总云量、云顶高度、云光学厚度</li>
+                    <li><strong>全球辐射卫星产品：</strong>地表太阳辐射、大气顶辐射收支</li>
+                </ul>
+
+                <h2>三、卫星数据应用领域</h2>
+                <p>卫星气象数据在以下领域发挥着至关重要的作用：</p>
+                <ul>
+                    <li>台风、暴雨、强对流等灾害性天气的监测和预警</li>
+                    <li>全球和区域气候变化监测与评估</li>
+                    <li>大气成分（气溶胶、臭氧、温室气体）的遥感监测</li>
+                    <li>海洋监测（海面温度、海洋水色、海冰）</li>
+                    <li>农业干旱监测和作物长势评估</li>
+                    <li>生态环境和自然灾害（森林火灾、沙尘暴）监测</li>
+                </ul>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">—— 数据来源于国家卫星气象中心 · 中国气象数据网</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

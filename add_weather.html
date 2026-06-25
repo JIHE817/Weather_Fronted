@@ -7,70 +7,92 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f3f4f6; }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        .transition-smooth { transition: all 0.2s ease-in-out; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">手动添加气象数据</h1>
-                <a href="index.html" class="text-blue-600 hover:underline">← 返回首页</a>
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- ===== 左侧主内容 ===== -->
+            <div class="flex-1">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">手动添加气象数据</h1>
+                        <a href="index.html" class="text-blue-600 hover:underline">← 返回首页</a>
+                    </div>
+
+                    <div id="error-message" class="mb-4"></div>
+                    <div id="success-message" class="mb-4"></div>
+
+                    <form id="add-weather-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">监测区域</label>
+                            <select id="add-region-id" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                                <option value="">加载中...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">时间</label>
+                            <input type="datetime-local" id="add-timestamp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">温度 (°C)</label>
+                                <input type="number" step="0.1" id="add-temp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">湿度 (%)</label>
+                                <input type="number" step="0.1" id="add-humidity" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">风速 (m/s)</label>
+                                <input type="number" step="0.1" id="add-wind-speed" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">风向</label>
+                                <input type="text" id="add-wind-dir" class="w-full border rounded-lg px-3 py-2 mt-1" placeholder="如：东南风" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">降水量 (mm)</label>
+                                <input type="number" step="0.1" id="add-precip" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg">提交数据</button>
+                    </form>
+                </div>
             </div>
 
-            <!-- 消息提示区：两个空的 <div> 占位，分别用 id="error-message" 和 id="success-message" 标识，由 JavaScript 动态填充错误提示或成功提示信息。 -->
-            <div id="error-message" class="mb-4"></div>
-            <div id="success-message" class="mb-4"></div>
-
-            <!-- 表单主体 -->
-            <form id="add-weather-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">监测区域</label>
-                    <select id="add-region-id" class="w-full border rounded-lg px-3 py-2 mt-1" required>
-                        <option value="">加载中...</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">时间</label>
-                    <!-- <input type="datetime-local"> 日期时间选择器 -->
-                    <input type="datetime-local" id="add-timestamp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
-                </div>
-
-                <!-- 用 grid grid-cols-1 md:grid-cols-2 gap-4 将 6 个气象字段排列成响应式两列网格：移动端单列，中等屏幕及以上双列。 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">温度 (°C)</label>
-                        <input type="number" step="0.1" id="add-temp" class="w-full border rounded-lg px-3 py-2 mt-1" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">湿度 (%)</label>
-                        <input type="number" step="0.1" id="add-humidity" class="w-full border rounded-lg px-3 py-2 mt-1" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">风速 (m/s)</label>
-                        <input type="number" step="0.1" id="add-wind-speed" class="w-full border rounded-lg px-3 py-2 mt-1" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">风向</label>
-                        <input type="text" id="add-wind-dir" class="w-full border rounded-lg px-3 py-2 mt-1" placeholder="如：东南风" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">降水量 (mm)</label>
-                        <input type="number" step="0.1" id="add-precip" class="w-full border rounded-lg px-3 py-2 mt-1" required>
+            <!-- ===== 右侧功能菜单 ===== -->
+            <div class="w-full lg:w-56 flex-shrink-0">
+                <div class="rounded-xl p-4 bg-white shadow-lg">
+                    <h3 class="text-lg font-bold text-gray-700 text-center border-b border-gray-200 pb-3 mb-3">⚡ 功能菜单</h3>
+                    <div class="flex flex-col gap-2.5">
+                        <a href="weather_search.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            🔍 气象数据检索
+                        </a>
+                        <a href="data_trend.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📈 数据趋势图
+                        </a>
+                        <a href="add_weather.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📊 添加气象数据
+                        </a>
+                        <a href="export_weather.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📤 导出气象数据
+                        </a>
+                        <a href="admin.html" id="admin-console-btn" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            ⚙️ 管理员控制台
+                        </a>
                     </div>
                 </div>
-                <!-- 全宽绿色提交按钮，点击后将表单数据提交到后端。 -->
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg">提交数据</button>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- 加载 script.js，使其中的 apiService 和 uiService 等工具类在当前页面可用 -->
     <script src="script.js"></script>
     <script>
-        // 独立页面的逻辑（复用 apiService 和 uiService）
-        (async function() {//立即执行函数（第72到140行）
-            // 检查登录状态从 localStorage 读取登录凭证。如果 token 或 user 任一缺失，弹出"请先登录"警告并强制跳转回首页。
+        (async function() {
             const token = localStorage.getItem('access_token');
             const user = localStorage.getItem('user_info');
             if (!token || !user) {
@@ -79,7 +101,19 @@
                 return;
             }
 
-            // 加载区域列表，调接口 → 拿到区域数组 → 遍历生成 <option> → 填充到 <select> 下拉框
+            // 根据用户角色显示/隐藏管理员按钮
+            try {
+                const userData = JSON.parse(user);
+                const adminBtn = document.getElementById('admin-console-btn');
+                if (adminBtn) {
+                    if (userData.role === 'admin') {
+                        adminBtn.classList.remove('hidden');
+                    } else {
+                        adminBtn.classList.add('hidden');
+                    }
+                }
+            } catch(e) {}
+
             async function loadRegions() {
                 try {
                     const data = await apiService.getRegions();
@@ -100,9 +134,8 @@
                 }
             }
 
-            await loadRegions();//从 localStorage 读取登录凭证。如果 token 或 user 任一缺失，弹出"请先登录"警告并强制跳转回首页。
+            await loadRegions();
 
-            // 提交表单，分别从 7 个表单输入框中读取用户填写的值：
             const form = document.getElementById('add-weather-form');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -116,11 +149,10 @@
 
                 if (!region_id || !timestamp || !temperature || !humidity || !wind_speed || !wind_direction || !precipitation) {
                     uiService.showError('请填写所有字段');
-                    return;//逐个检查所有字段是否填写，任一为空则提示并阻止提交
+                    return;
                 }
 
                 try {
-                    // 调用封装好的 apiService.addWeatherData() 方法，将表单数据以 POST 请求发送到后端
                     await apiService.addWeatherData({
                         region_id: parseInt(region_id),
                         timestamp,
@@ -132,7 +164,6 @@
                     });
                     uiService.showSuccess('气象数据添加成功！');
                     form.reset();
-                    // 可选：重新加载区域列表（保持选中状态）
                     await loadRegions();
                 } catch (err) {
                     uiService.showError(err.message);
@@ -142,6 +173,3 @@
     </script>
 </body>
 </html>
-<!-- 
-前端录入的气象数据，通过通用script.js31行apiService.request通用方法统一发起网络请求的
-添加的气象数据以 JSON 格式 通过 POST 请求体发送————js41_43行 -->

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雷达资料 - 气象资料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .article-content { font-size: 16px; line-height: 1.9; color: #1f2937; }
+        .article-content h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px 0; color: #111827; }
+        .article-content h3 { font-size: 17px; font-weight: 600; margin: 20px 0 10px 0; color: #1f2937; }
+        .article-content p { margin-bottom: 16px; text-indent: 2em; }
+        .article-content ul, .article-content ol { margin: 10px 0 16px 2em; }
+        .article-content li { margin-bottom: 6px; }
+        .article-content blockquote { border-left: 4px solid #f59e0b; margin: 16px 0; color: #4b5563; background: #fffbeb; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 500; transition: color 0.2s; }
+        .back-link:hover { color: #1d4ed8; }
+        .category-badge { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <div class="mb-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="category-badge text-white text-xs font-bold px-3 py-1 rounded-full">雷达资料</span>
+                <span class="text-sm text-gray-500">更新于 2026-06</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">📡 天气雷达组网观测数据</h1>
+            <p class="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">共 9 类数据产品 · 覆盖全国天气雷达组网</p>
+            <div class="article-content">
+                <h2>一、数据概述</h2>
+                <p>天气雷达是监测和预警强对流天气（暴雨、冰雹、龙卷、大风）最重要的探测工具之一。我国已建成由200多部多普勒天气雷达组成的全国组网观测系统，实现了对全国大部分区域的实时雷达监测覆盖。</p>
+                <p>天气雷达通过发射微波脉冲并接收云雨粒子的回波信号，能够精确探测降水的强度、分布、移动速度和垂直结构。雷达组网数据经过质量控制和拼图处理，形成全国无缝覆盖的雷达图像产品，为短临天气预报和灾害性天气预警提供分钟级的实时观测信息。</p>
+
+                <h2>二、主要数据产品（9类）</h2>
+                <p>天气雷达组网观测数据包含以下9类核心产品：</p>
+
+                <h3>（一）基本雷达产品（4类）</h3>
+                <ul>
+                    <li><strong>天气雷达组网基本反射率图像产品：</strong>单部雷达原始反射率拼图产品，反映降水粒子的分布和强度</li>
+                    <li><strong>天气雷达组网组合反射率图像产品：</strong>多部雷达反射率拼图和组合处理，形成全国无缝覆盖反射率图像</li>
+                    <li><strong>雷达径向速度产品：</strong>反映降水粒子相对于雷达的径向运动速度，识别中尺度气旋和风切变</li>
+                    <li><strong>雷达谱宽产品：</strong>反映雷达采样体积内粒子速度变化的离散程度，用于湍流识别</li>
+                </ul>
+
+                <h3>（二）雷达导出产品（5类）</h3>
+                <ul>
+                    <li><strong>天气雷达组网液态垂直累积含水（VIL）产品：</strong>云体中液态水总含量垂直累积值，判断强降水潜势和冰雹风险</li>
+                    <li><strong>天气雷达组网回波顶高图像产品：</strong>降水回波顶部的最高高度，分析对流发展强度和潜在危险性</li>
+                    <li><strong>天气雷达组网24小时降水估测图：</strong>基于雷达反射率数据反演的24小时累积降水量估计</li>
+                    <li><strong>双偏振雷达产品：</strong>差分反射率、相关系数、差分相移等双偏振参数，识别降水粒子相态（雨/雪/冰雹/霰）</li>
+                    <li><strong>雷达风场反演产品：</strong>基于多部雷达联合反演的三维风场产品</li>
+                </ul>
+
+                <h2>三、雷达数据的应用</h2>
+                <p>天气雷达数据在以下气象业务和科研中发挥关键作用：</p>
+                <ul>
+                    <li>强对流天气（暴雨、冰雹、龙卷风）的实时监测和预警</li>
+                    <li>短时临近天气预报（0-6小时）的降水预报</li>
+                    <li>城市内涝、山洪等次生灾害的风险评估</li>
+                    <li>人工影响天气（增雨、防雹）的效果评估</li>
+                    <li>航空气象安全保障（机场周边危险天气监测）</li>
+                    <li>水文中长期径流预报和洪水预警</li>
+                </ul>
+
+                <blockquote>
+                    <strong>技术亮点：</strong> 我国双偏振雷达技术已实现业务化应用，能够识别降水粒子的相态（雨、雪、冰雹、霰），极大提升了对冰雹和混合相态降水的识别能力。
+                </blockquote>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">—— 数据来源于中国气象局雷达气象中心 · 中国气象数据网</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

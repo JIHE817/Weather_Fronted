@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气象资料 - 区域气象监测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+        .transition-smooth { transition: all 0.2s ease-in-out; }
+        .data-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: #ffffff;
+        }
+        .data-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.10);
+            border-color: #93c5fd;
+        }
+        .stat-item {
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- ===== 左侧主内容 ===== -->
+            <div class="flex-1">
+                <!-- 标题栏 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                📚 气象资料
+                            </h1>
+                            <p class="text-sm text-gray-500 mt-1">
+                                依托气象大数据云平台，提供完整、及时、稳定、准确的气象数据服务
+                            </p>
+                        </div>
+                        <a href="../index.html" class="text-blue-500 hover:text-blue-700 text-sm font-medium">← 返回首页</a>
+                    </div>
+                </div>
+
+                <!-- 统计信息 - 简化 -->
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">25</p>
+                        <p class="text-xs text-gray-500">地面</p>
+                    </div>
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">9</p>
+                        <p class="text-xs text-gray-500">高空</p>
+                    </div>
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">983</p>
+                        <p class="text-xs text-gray-500">卫星</p>
+                    </div>
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">9</p>
+                        <p class="text-xs text-gray-500">雷达</p>
+                    </div>
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">6</p>
+                        <p class="text-xs text-gray-500">数值预报</p>
+                    </div>
+                    <div class="stat-item rounded-lg p-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-blue-500">19</p>
+                        <p class="text-xs text-gray-500">服务产品</p>
+                    </div>
+                </div>
+
+                <!-- 资料分类卡片 - 统一浅蓝色 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 地面资料 -->
+                    <a href="article_ground.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">🌍 地面资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">中国地面基本气象观测数据</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">25类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">气温 · 降水 · 风速 · 湿度 · 气压</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 高空资料 -->
+                    <a href="article_upper.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">🎈 高空资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">中国高空气象观测数据</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">9类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">探空数据 · 气候标准值 · 温压湿风</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 卫星资料 -->
+                    <a href="article_satellite.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">🛰️ 卫星资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">风云卫星及国际卫星数据</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">983类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">METEOSAT · 快速成像仪 · 定量产品</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 雷达资料 -->
+                    <a href="article_radar.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">📡 雷达资料</h3>
+                                <p class="text-xs text-gray-500 mt-1">天气雷达组网观测数据</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">9类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">组合反射率 · 回波顶高 · 降水估测</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 数值预报 -->
+                    <a href="article_nwp.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">💻 数值预报</h3>
+                                <p class="text-xs text-gray-500 mt-1">CMA-GFS/MESO模式产品</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">6类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">全球/区域模式 · 北半球/亚欧/东亚</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+
+                    <!-- 服务产品 -->
+                    <a href="article_service.html" class="data-card rounded-xl p-5 border border-gray-200 hover:border-blue-300 block no-underline">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">📋 服务产品</h3>
+                                <p class="text-xs text-gray-500 mt-1">台风实况与预报产品</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium">19类</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">全球台风实况 · 路径信息 · 天气公报</p>
+                        <div class="mt-3 text-xs text-blue-500 font-medium">查看详情 →</div>
+                    </a>
+                </div>
+
+                <!-- 底部 -->
+                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <p class="text-xs text-gray-400">📌 数据来源于国家气象信息中心 · 中国气象数据网</p>
+                    <span class="text-xs text-gray-400">数据持续更新中</span>
+                </div>
+            </div>
+
+            <!-- ===== 右侧功能菜单 ===== -->
+            <div class="w-full lg:w-52 flex-shrink-0">
+                <div class="rounded-xl p-4 bg-white shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-700 text-center border-b border-gray-100 pb-2 mb-2">⚡ 功能菜单</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="../weather_search.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            🔍 气象数据检索
+                        </a>
+                        <a href="../data_trend.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📈 数据趋势图
+                        </a>
+                        <a href="../add_weather.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📊 添加气象数据
+                        </a>
+                        <a href="../export_weather.html" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            📤 导出气象数据
+                        </a>
+                        <a href="../admin.html" id="admin-console-btn" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-smooth shadow-sm text-sm">
+                            ⚙️ 管理员控制台
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            try {
+                const userStr = localStorage.getItem('user_info');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    const adminBtn = document.getElementById('admin-console-btn');
+                    if (adminBtn) {
+                        if (user.role === 'admin') {
+                            adminBtn.classList.remove('hidden');
+                        } else {
+                            adminBtn.classList.add('hidden');
+                        }
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
+</body>
+</html>

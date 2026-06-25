@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地面资料 - 气象资料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .article-content { font-size: 16px; line-height: 1.9; color: #1f2937; }
+        .article-content h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px 0; color: #111827; }
+        .article-content h3 { font-size: 17px; font-weight: 600; margin: 20px 0 10px 0; color: #1f2937; }
+        .article-content p { margin-bottom: 16px; text-indent: 2em; }
+        .article-content ul, .article-content ol { margin: 10px 0 16px 2em; }
+        .article-content li { margin-bottom: 6px; }
+        .article-content blockquote { border-left: 4px solid #3b82f6; margin: 16px 0; color: #4b5563; background: #f8fafc; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 500; transition: color 0.2s; }
+        .back-link:hover { color: #1d4ed8; }
+        .category-badge { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <div class="mb-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="category-badge text-white text-xs font-bold px-3 py-1 rounded-full">地面资料</span>
+                <span class="text-sm text-gray-500">更新于 2026-06</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">🌍 中国地面基本气象观测数据</h1>
+            <p class="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">共 25 类数据产品 · 覆盖全国地面气象观测站网</p>
+            <div class="article-content">
+                <h2>一、数据概述</h2>
+                <p>中国地面基本气象观测数据是我国气象观测体系中最基础、最完整的数据集之一。该数据集依托全国2400多个国家级地面气象观测站和数万个区域自动气象站，实时采集和传输地面气象要素信息，为天气预报、气候研究、农业生产和防灾减灾提供关键数据支撑。</p>
+                <p>地面气象观测站网按照国家标准布局，观测项目涵盖温度、湿度、气压、风向风速、降水量、日照时数、蒸发量、地温等数十个气象要素。观测数据经过严格的质量控制和数据同化处理，确保数据的准确性、完整性和时效性。</p>
+
+                <h2>二、主要数据产品（25类）</h2>
+                <p>中国地面基本气象观测数据包含以下25类核心数据产品：</p>
+
+                <h3>（一）实时观测数据（6类）</h3>
+                <ul>
+                    <li><strong>逐小时地面观测数据：</strong>全国2400+国家级气象站逐小时温度、湿度、气压、风速风向、降水等实时观测</li>
+                    <li><strong>逐日地面观测数据：</strong>每日最高/最低气温、日降水量、平均风速、日照时数等日统计值</li>
+                    <li><strong>逐月地面观测数据：</strong>月平均气温、月降水量、月极端气温等月度统计</li>
+                    <li><strong>区域自动站逐小时数据：</strong>全国数万个区域自动气象站加密观测数据</li>
+                    <li><strong>区域自动站逐日数据：</strong>区域自动站日统计数据集</li>
+                    <li><strong>地面气象观测分钟数据：</strong>部分站点分钟级高频率观测数据</li>
+                </ul>
+
+                <h3>（二）气候标准值数据集（8类）</h3>
+                <ul>
+                    <li><strong>中国地面气候标准值（气温）月值：</strong>1991-2020年30年月平均气温标准值</li>
+                    <li><strong>中国地面气候标准值（气温）年值：</strong>1991-2020年30年年平均气温标准值</li>
+                    <li><strong>中国地面气候标准值（降水）月值：</strong>1991-2020年30年月降水量标准值</li>
+                    <li><strong>中国地面气候标准值（降水）年值：</strong>1991-2020年30年年降水量标准值</li>
+                    <li><strong>中国地面气候标准值（日照）月值：</strong>1991-2020年30年月日照时数标准值</li>
+                    <li><strong>中国地面气候标准值（风速）月值：</strong>1991-2020年30年月平均风速标准值</li>
+                    <li><strong>中国地面气候标准值（湿度）月值：</strong>1991-2020年30年月平均相对湿度标准值</li>
+                    <li><strong>中国地面气候标准值（地温）月值：</strong>1991-2020年30年月平均地温标准值</li>
+                </ul>
+
+                <h3>（三）全球地面数据集（4类）</h3>
+                <ul>
+                    <li><strong>全球地面基本气象观测数据：</strong>通过WMO全球交换获取的全球地面观测数据</li>
+                    <li><strong>全球地面气候标准值数据集：</strong>全球主要城市气候标准值</li>
+                    <li><strong>全球地面极端天气事件数据集：</strong>全球极端高温、低温、暴雨等事件记录</li>
+                    <li><strong>全球地面日值数据集：</strong>全球地面站点日观测数据</li>
+                </ul>
+
+                <h3>（四）专题数据集（7类）</h3>
+                <ul>
+                    <li><strong>中国地面农业气象观测数据：</strong>农作物生长环境观测数据</li>
+                    <li><strong>中国地面酸雨观测数据：</strong>全国酸雨监测站点观测数据</li>
+                    <li><strong>中国地面雷电观测数据：</strong>全国闪电定位系统监测数据</li>
+                    <li><strong>中国地面辐射观测数据：</strong>太阳辐射和地表辐射平衡观测</li>
+                    <li><strong>中国地面蒸发观测数据：</strong>水面蒸发和潜在蒸散发观测</li>
+                    <li><strong>中国地面冻土/积雪观测数据：</strong>季节性冻土和积雪深度观测</li>
+                    <li><strong>中国地面能见度观测数据：</strong>大气能见度观测数据</li>
+                </ul>
+
+                <h2>三、数据质量保障</h2>
+                <blockquote>
+                    所有地面观测数据均经过四级质量控制系统校验，包括极值检查、时间一致性检查、空间一致性检查和综合质量控制，确保数据准确可靠。
+                </blockquote>
+                <p>数据质量控制流程包括：实时数据自动质检、人工复核、气候极值筛查、邻近站对比验证等环节。经过质量控制的数据通过气象大数据云平台统一分发和服务，确保用户获取到高质量的气象数据。</p>
+
+                <h2>四、数据获取与应用</h2>
+                <p>用户可通过本系统的气象数据检索功能，按区域、时间范围、数据类型等条件查询和下载所需的地面观测数据。数据支持多种格式导出（CSV、JSON等），便于在科研、业务和教学等领域中使用。</p>
+                <p>典型应用场景包括：</p>
+                <ul>
+                    <li>天气预报模式初始场和验证数据</li>
+                    <li>气候变化监测和评估研究</li>
+                    <li>农业气象服务和灾害预警</li>
+                    <li>城市热岛效应和生态环境分析</li>
+                    <li>水利、交通、能源等行业的气象保障</li>
+                </ul>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">—— 数据来源于国家气象信息中心 · 中国气象数据网</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数值预报 - 气象资料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .article-content { font-size: 16px; line-height: 1.9; color: #1f2937; }
+        .article-content h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px 0; color: #111827; }
+        .article-content h3 { font-size: 17px; font-weight: 600; margin: 20px 0 10px 0; color: #1f2937; }
+        .article-content p { margin-bottom: 16px; text-indent: 2em; }
+        .article-content ul, .article-content ol { margin: 10px 0 16px 2em; }
+        .article-content li { margin-bottom: 6px; }
+        .article-content blockquote { border-left: 4px solid #f43f5e; margin: 16px 0; color: #4b5563; background: #fff1f2; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 500; transition: color 0.2s; }
+        .back-link:hover { color: #1d4ed8; }
+        .category-badge { background: linear-gradient(135deg, #f43f5e, #fb7185); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <div class="mb-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="category-badge text-white text-xs font-bold px-3 py-1 rounded-full">数值预报</span>
+                <span class="text-sm text-gray-500">更新于 2026-06</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">💻 CMA-GFS/MESO 数值模式预报产品</h1>
+            <p class="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">共 6 类数据产品 · 覆盖全球/区域数值预报</p>
+            <div class="article-content">
+                <h2>一、数据概述</h2>
+                <p>数值天气预报是当代气象预报的核心技术基础。中国气象局自主研发的CMA-GFS（全球预报系统）和CMA-MESO（区域中尺度预报系统）是我国数值预报业务体系的两大支柱，为全国各级气象台站提供高质量的数值预报产品。</p>
+                <p>CMA-GFS是全球中期数值天气预报系统，水平分辨率约25公里，提供未来10天的全球天气预报。CMA-MESO是中国区域3公里分辨率的对流可分辨中尺度模式，能够精细刻画中小尺度天气系统的演变过程，为短临天气预报提供关键支撑。</p>
+
+                <h2>二、主要数据产品（6类）</h2>
+                <p>数值预报产品包含以下6类核心数据：</p>
+
+                <h3>（一）全球模式产品（3类）</h3>
+                <ul>
+                    <li><strong>CMA-GFS全球数值模式预报产品：</strong>全球中期数值模式多要素（温度、降水、风、湿度等）格点预报场，时间分辨率3-6小时，预报时效10天</li>
+                    <li><strong>CMA全球天气模式预报（北半球）：</strong>北半球区域高分辨率模式预报产品，覆盖东亚及周边地区</li>
+                    <li><strong>CMA全球天气模式预报（亚欧）：</strong>亚欧大陆尺度模式预报产品，支持跨区域天气分析和预报</li>
+                </ul>
+
+                <h3>（二）区域模式产品（2类）</h3>
+                <ul>
+                    <li><strong>CMA-MESO 3km数值模式预报产品：</strong>中国区域3公里分辨率中尺度模式预报，时空分辨率更高，适用于区域精细化预报</li>
+                    <li><strong>CMA全球天气模式预报（东亚）：</strong>东亚区域精细化模式预报产品，针对东亚季风区特点进行了优化</li>
+                </ul>
+
+                <h3>（三）集合预报产品（1类）</h3>
+                <ul>
+                    <li><strong>CMA集合预报产品：</strong>基于多成员扰动的集合预报系统，提供预报不确定性和概率预报信息，包括台风路径概率预报、降水概率预报等</li>
+                </ul>
+
+                <h2>三、数值预报的应用</h2>
+                <p>数值预报产品广泛应用于气象业务的各个层面：</p>
+                <ul>
+                    <li>日常天气预报（3-7天中期预报、1-3天短期预报）</li>
+                    <li>灾害性天气（台风、暴雨、暴雪、寒潮）的预报预警</li>
+                    <li>精细化城市气象服务和重大活动气象保障</li>
+                    <li>农业气象服务（农事指导、灾害评估）</li>
+                    <li>航空、航海、交通等行业的专业气象服务</li>
+                    <li>气候预测和气候变化研究的基础数据</li>
+                </ul>
+
+                <blockquote>
+                    <strong>性能提升：</strong> 新一代CMA-GFS模式在动力框架、物理过程和资料同化方面进行了全面升级，全球预报时效延长至10天，关键区域预报精度提升约15%。
+                </blockquote>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">—— 数据来源于中国气象局数值预报中心 · 中国气象数据网</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

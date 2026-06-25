@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高空资料 - 气象资料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .article-content { font-size: 16px; line-height: 1.9; color: #1f2937; }
+        .article-content h2 { font-size: 22px; font-weight: 700; margin: 28px 0 12px 0; color: #111827; }
+        .article-content h3 { font-size: 17px; font-weight: 600; margin: 20px 0 10px 0; color: #1f2937; }
+        .article-content p { margin-bottom: 16px; text-indent: 2em; }
+        .article-content ul, .article-content ol { margin: 10px 0 16px 2em; }
+        .article-content li { margin-bottom: 6px; }
+        .article-content blockquote { border-left: 4px solid #22c55e; margin: 16px 0; color: #4b5563; background: #f0fdf4; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 500; transition: color 0.2s; }
+        .back-link:hover { color: #1d4ed8; }
+        .category-badge { background: linear-gradient(135deg, #22c55e, #4ade80); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <div class="mb-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="category-badge text-white text-xs font-bold px-3 py-1 rounded-full">高空资料</span>
+                <span class="text-sm text-gray-500">更新于 2026-06</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">🎈 中国高空气象观测数据</h1>
+            <p class="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">共 9 类数据产品 · 覆盖全国高空气象探测站网</p>
+            <div class="article-content">
+                <h2>一、数据概述</h2>
+                <p>中国高空气象观测数据是通过无线电探空仪、风廓线雷达、GPS探空系统等设备获取的大气垂直廓线信息。高空观测能够捕捉大气从地面到30公里高度的温、压、湿、风等要素的垂直分布特征，是数值天气预报、天气分析和气候研究的重要基础数据。</p>
+                <p>目前，我国拥有120多个常规高空气象探测站，每日进行2-4次定时探空观测，并实时将数据传输至国家级气象数据中心。高空观测数据与地面观测、卫星遥感数据相互补充，构成了完整的大气三维观测体系。</p>
+
+                <h2>二、主要数据产品（9类）</h2>
+                <p>中国高空气象观测数据包含以下9类核心数据产品：</p>
+
+                <h3>（一）实时高空观测数据（3类）</h3>
+                <ul>
+                    <li><strong>中国高空基本气象观测数据：</strong>各探空站定时观测的温度、气压、湿度、风向风速等标准等压面数据</li>
+                    <li><strong>中国高空风观测数据：</strong>高空风向风速的垂直分布数据，含逐层风速风向记录</li>
+                    <li><strong>中国高空温压湿观测数据：</strong>各标准等压面的温度、气压、露点温度等要素数据</li>
+                </ul>
+
+                <h3>（二）高空气候标准值数据集（3类）</h3>
+                <ul>
+                    <li><strong>中国高空气候标准值（月值）数据集：</strong>基于多年高空观测数据计算的各标准等压面月气候平均值</li>
+                    <li><strong>中国高空气候标准值（年值）数据集：</strong>年尺度的高空气候统计值，支持长期气候变化趋势分析</li>
+                    <li><strong>中国高空极值数据集：</strong>各高度层极端温度、极端风速的历史极值记录</li>
+                </ul>
+
+                <h3>（三）全球高空数据集（3类）</h3>
+                <ul>
+                    <li><strong>全球高空基本气象观测数据：</strong>通过国际气象数据交换获取的全球高空观测数据</li>
+                    <li><strong>全球高空气候标准值数据集：</strong>全球主要探空站高空气候标准值</li>
+                    <li><strong>中国高空气象观测历史数据集：</strong>涵盖建站以来所有历史探空观测记录</li>
+                </ul>
+
+                <h2>三、高空数据应用</h2>
+                <p>高空观测数据在以下领域发挥关键作用：</p>
+                <ul>
+                    <li>数值天气预报的初始场和边界条件</li>
+                    <li>天气系统（锋面、气旋、高空槽）分析</li>
+                    <li>大气环流和气候变化研究</li>
+                    <li>航空天气预报和安全保障</li>
+                    <li>大气污染扩散和环境气象服务</li>
+                </ul>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">—— 数据来源于国家气象信息中心 · 中国气象数据网</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">
+                <a href="index.html" class="back-link">← 返回资料目录</a>
+                <a href="../index.html" class="text-blue-600 hover:underline text-sm">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
