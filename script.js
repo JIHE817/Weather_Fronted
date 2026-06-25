@@ -1280,47 +1280,57 @@ const appController = {
 
         // ===== 栅格查询 =====
         document.getElementById('query-raster-btn')?.addEventListener('click', async () => {
-            const regionId = document.getElementById('region-select')?.value;
-            if (!regionId) {
-                uiService.showToast('请先选择区域', 'error');
-                return;
-            }
-            const dataType = document.getElementById('raster-data-type-query')?.value;
-            const resolution = document.getElementById('raster-resolution-query')?.value;
+    const regionId = document.getElementById('region-select')?.value;
+    if (!regionId) {
+        uiService.showToast('请先选择区域', 'error');
+        return;
+    }
+    const dataType = document.getElementById('raster-data-type-query')?.value;
+    const resolution = document.getElementById('raster-resolution-query')?.value;
 
-            try {
-                const result = await apiService.getRasterData(
-                    parseInt(regionId),
-                    dataType,
-                    resolution ? parseInt(resolution) : null
+    try {
+        const result = await apiService.getRasterData(
+            parseInt(regionId),
+            dataType,
+            resolution ? parseInt(resolution) : null
+        );
+
+        const display = document.getElementById('raster-data-display');
+        const container = document.getElementById('raster-result');
+        if (result.data) {
+            const data = result.data;
+            let info = `数据类型: ${data.data_type || dataType}\n`;
+            info += `单位: ${data.units || '无'}\n`;
+            if (data.min !== undefined) info += `最小值: ${data.min}\n`;
+            if (data.max !== undefined) info += `最大值: ${data.max}\n`;
+            if (data.bounds) info += `范围: [${data.bounds.join(', ')}]\n`;
+            if (data.resolution_deg) info += `分辨率: ${data.resolution_deg}°\n`;
+            if (data.is_simulated) info += `⚠️ 模拟数据（实际数据不存在）\n`;
+
+            // ============ 修复位置：网格预览增加空值判断 ============
+            if (data.grid) {
+                // 安全格式化函数：若值为 null/undefined/NaN 则显示 'N/A'
+                const formatVal = (v) => {
+                    if (v === null || v === undefined || isNaN(v)) return 'N/A';
+                    return v.toFixed(2);
+                };
+                const gridPreview = data.grid.slice(0, 5).map(row =>
+                    row.slice(0, 5).map(v => formatVal(v)).join(', ') +
+                    (row.length > 5 ? '...' : '')
                 );
-
-                const display = document.getElementById('raster-data-display');
-                const container = document.getElementById('raster-result');
-                if (result.data) {
-                    const data = result.data;
-                    let info = `数据类型: ${data.data_type || dataType}\n`;
-                    info += `单位: ${data.units || '无'}\n`;
-                    if (data.min !== undefined) info += `最小值: ${data.min}\n`;
-                    if (data.max !== undefined) info += `最大值: ${data.max}\n`;
-                    if (data.bounds) info += `范围: [${data.bounds.join(', ')}]\n`;
-                    if (data.resolution_deg) info += `分辨率: ${data.resolution_deg}°\n`;
-                    if (data.is_simulated) info += `⚠️ 模拟数据（实际数据不存在）\n`;
-                    if (data.grid) {
-                        const gridPreview = data.grid.slice(0, 5).map(row =>
-                            row.slice(0, 5).map(v => v.toFixed(2)).join(', ') + (row.length > 5 ? '...' : '')
-                        );
-                        info += `\n网格预览 (前5×5):\n${gridPreview.join('\n')}`;
-                        info += `\n\n总网格: ${data.grid.length}×${data.grid[0]?.length || 0}`;
-                    }
-                    display.textContent = info;
-                    container.classList.remove('hidden');
-                    uiService.showToast('栅格数据查询成功', 'success');
-                }
-            } catch (err) {
-                uiService.showToast(err.message, 'error');
+                info += `\n网格预览 (前5×5):\n${gridPreview.join('\n')}`;
+                info += `\n\n总网格: ${data.grid.length}×${data.grid[0]?.length || 0}`;
             }
-        });
+            // =====================================================
+
+            display.textContent = info;
+            container.classList.remove('hidden');
+            uiService.showToast('栅格数据查询成功', 'success');
+        }
+    } catch (err) {
+        uiService.showToast(err.message, 'error');
+    }
+});
 
         // ===== 预警 =====
         document.getElementById('query-alert-btn')?.addEventListener('click', async () => {
